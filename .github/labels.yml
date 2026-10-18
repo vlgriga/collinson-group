@@ -1,0 +1,40 @@
+# Every label the repository uses, synced by `scripts/board.sh labels`.
+# Adding one here is a decision; see docs/workflow-lifecycle.md#the-issue.
+
+- name: area:api
+  color: '1d76db'
+  description: GraphQL schema, resolvers, HTTP server
+- name: area:locations
+  color: '1d76db'
+  description: Geocoding, location resolution
+- name: area:weather
+  color: '1d76db'
+  description: Open-Meteo clients, ingest, weather repositories
+- name: area:scoring
+  color: '1d76db'
+  description: Activity scorers, aggregation
+- name: area:jobs
+  color: '1d76db'
+  description: pg-boss, refresh and retention jobs
+- name: area:db
+  color: '1d76db'
+  description: Schema, migrations
+- name: area:infra
+  color: '1d76db'
+  description: Docker, CI, tooling
+- name: area:docs
+  color: '1d76db'
+  description: Documentation
+
+- name: bug
+  color: 'd73a4a'
+  description: Behaviour differs from what was agreed
+- name: blocked
+  color: 'b60205'
+  description: Cannot move until something else does
+- name: needs-decision
+  color: 'fbca04'
+  description: Waiting on a choice, recorded as an ADR or in the issue
+- name: tech-debt
+  color: 'c5def5'
+  description: A known shortcut to pay back

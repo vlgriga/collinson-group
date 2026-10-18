@@ -191,7 +191,7 @@ Each factor maps to a 0–1 sub-score via piecewise-linear "comfort band" curves
 |---|---|---|
 | Runtime | Node 22 LTS, TypeScript strict, ESM | — |
 | GraphQL | GraphQL Yoga, SDL + graphql-codegen | Lighter than Apollo Server; SDL is easier to review than code-first (Pothos) |
-| Storage | Postgres 16 | Concurrency across two processes, upserts, jsonb, hosts the job queue; SQLite rejected for multi-process use |
+| Storage | Postgres 17 | Concurrency across two processes, upserts, jsonb, hosts the job queue; SQLite rejected for multi-process use |
 | Data access | Drizzle ORM + drizzle-kit migrations | Typed bulk `ON CONFLICT` upserts, no codegen step, SQL-like; Prisma lacks bulk upsert; Kysely/raw `pg` equally viable |
 | Jobs | pg-boss | Cron, retries, singleton keys, no extra infra |
 | HTTP | native fetch + zod + p-retry | — |

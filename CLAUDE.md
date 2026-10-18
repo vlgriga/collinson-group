@@ -47,12 +47,14 @@ make dev-worker
 make check         # lint, format check, typecheck; changes nothing
 make fix
 make test          # all levels, real Postgres in containers (Docker must be running)
+make build         # src/ → dist/
 make gate          # check + test + build; must pass before any push
 make codegen       # after editing schema.graphql
 make migration     # after editing src/db/schema.ts; read the generated SQL
 
 make start ISSUE=<n> [TYPE=bugfix]   # worktree + branch, issue → In Progress
 make pr | make ready | make merge | make cleanup
+make branch-check [BRANCH=<name>]    # the branch template, as the commit-msg hook runs it
 ```
 
 One test layer: `npm run test:unit` (no Docker), `test:integration`, `test:e2e`; append `-- <name>`

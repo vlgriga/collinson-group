@@ -1,0 +1,9 @@
+dist/
+coverage/
+logs/
+package-lock.json
+src/db/migrations/
+src/graphql/generated/
+.claude/
+# Docs are wrapped by hand; Prettier would realign every table.
+*.md

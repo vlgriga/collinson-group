@@ -19,7 +19,7 @@ In priority order.
 3. **Nothing of our own is mocked.** Only a third-party dependency is replaced, and only by a
    [fake](#isolating-dependencies): a working implementation of the same contract. One exception:
    [fault injection](#fault-injection).
-4. **Infrastructure is production-like.** Postgres 16, the same major version as production, in a
+4. **Infrastructure is production-like.** Postgres 17, the same major version as production, in a
    container, with the schema the migrations produce.
 5. **Given, when, then.** Comments split the test body into those three, with exactly one *when*.
    A refusal checked with `await expect(…).rejects.toThrow(…)` reads `// When / Then`.
@@ -270,7 +270,7 @@ the `Clock`, and retry delays come from configuration.
 
 ## Environment
 
-- **Database.** `globalSetup` starts one Postgres 16 container per run, applies the migrations once
+- **Database.** `globalSetup` starts one Postgres 17 container per run, applies the migrations once
   to a template database, and gives each Vitest worker its own database copied from it
   (`test_${VITEST_POOL_ID}`).
 - **Schema from migrations**, so tests also prove the migrations apply. `make gate` checks that

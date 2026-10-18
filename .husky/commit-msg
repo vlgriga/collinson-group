@@ -1,0 +1,2 @@
+npx --no -- commitlint --edit "$1"
+make --no-print-directory branch-check
