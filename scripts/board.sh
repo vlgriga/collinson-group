@@ -9,17 +9,17 @@ set -euo pipefail
 # field and option IDs in `gh project field-list <number> --owner <owner> --format json`
 # and `gh project view <number> --owner <owner> --format json`.
 OWNER=vlgriga
-PROJECT_NUMBER=
-PROJECT_ID=
-STATUS_FIELD_ID=
+PROJECT_NUMBER=2
+PROJECT_ID=PVT_kwHOAOck_c4Bnoyl
+STATUS_FIELD_ID=PVTSSF_lAHOAOck_c4BnoylzhmMbsY
 status_option_id() {
   case $1 in
-    'Backlog') echo '' ;;
-    'Selected for Development') echo '' ;;
-    'In Progress') echo '' ;;
-    'In Review') echo '' ;;
-    'Done') echo '' ;;
-    'Cancelled') echo '' ;;
+    'Backlog') echo 928098df ;;
+    'Selected for Development') echo fc1c63d7 ;;
+    'In Progress') echo c40f9bc4 ;;
+    'In Review') echo f539cfe8 ;;
+    'Done') echo f9e97967 ;;
+    'Cancelled') echo 221f9e70 ;;
     *) die "unknown status '$1'" ;;
   esac
 }
