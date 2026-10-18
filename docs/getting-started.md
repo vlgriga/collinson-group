@@ -72,7 +72,7 @@ service reads, with a value that works locally, and it is the file `.env` is mad
 (`cp .env.example .env`). `src/config/env.ts` validates them at startup, and the process exits if
 any is missing or invalid, so a setting added without the variable that fills it fails on the first
 run rather than in production. The logging variables are described in
-[logging.md](logging.md#configuration).
+[logging.md](architecture/logging.md#configuration).
 
 How the project is worked on is declared apart from how the service runs, each where it is
 enforced: the commit grammar and scopes in `commitlint.config.js`, the branch template in the

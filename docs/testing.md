@@ -1,6 +1,6 @@
 # Testing
 
-> Related: [Architecture](architecture.md) · [Workflow](workflow-lifecycle.md) · [Style guide](styleguide.md)
+> Related: [Architecture](architecture/) · [Workflow](workflow-lifecycle.md) · [Style guide](styleguide.md)
 
 ## Context
 
