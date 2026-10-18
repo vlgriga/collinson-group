@@ -9,7 +9,8 @@ A GraphQL backend (Node.js, TypeScript) that takes a city or town and ranks how 
 | Doc | Contents |
 |---|---|
 | [Task](TASK.md) | Original brief |
-| [Architecture](docs/architecture.md) | Requirements, components, data model, API, scoring, trade-offs, risks, open questions |
+| [Product requirements](docs/prd.md) | Problem, users, requirements, assumptions, out of scope, success criteria, open questions |
+| [Architecture](docs/architecture.md) | Components, data model, API, scoring, trade-offs, risks |
 | [Decisions](docs/decisions/) | Key decisions and the alternatives rejected |
 | [Getting started](docs/getting-started.md) | Prerequisites, setup, checks, schema changes, configuration |
 | [Workflow](docs/workflow-lifecycle.md) | Issues, board, flow targets, review, CI, definition of done |

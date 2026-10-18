@@ -1,31 +1,12 @@
 # Architecture
 
-> Related: [Decisions](decisions/) · [Workflow](workflow-lifecycle.md) · [Style guide](styleguide.md) · [Testing](testing.md) · [Implementation plan](implementation-plan.md)
+> Related: [Requirements](prd.md) · [Decisions](decisions/) · [Workflow](workflow-lifecycle.md) · [Style guide](styleguide.md) · [Testing](testing.md) · [Implementation plan](implementation-plan.md)
 
 A backend service that takes a city or town and ranks how good each of the next 7 days will be for **skiing, surfing, outdoor sightseeing and indoor sightseeing**, using weather data from Open-Meteo that is persisted and refreshed rather than fetched per request.
 
-## 1. Requirements
+What it must do, the assumptions behind it, what is out of scope and the open questions are in the [product requirements](prd.md). This document is how.
 
-**Functional**
-- Input: a city/town name (optional ISO-2 country code).
-- Output: for each activity, a 0–100 score per day for the next 7 days, a rating, human-readable reasons, a 7-day aggregate score and the best day; activities sorted best → worst.
-- Weather data is persisted; requests are served from storage, not by calling Open-Meteo every time.
-
-**Non-functional**
-- Typical response from stored data in well under 100 ms; a cold (never-seen) city in ~1–2 s.
-- Keeps working (with stale data, clearly flagged) when Open-Meteo is unavailable.
-- Polite to Open-Meteo's free tier (bounded, de-duplicated calls).
-- Runnable locally with one command; CI runs lint, typecheck and tests.
-
-## 2. Assumptions
-
-- "Next 7 days" = today + 6 days, in the **location's local timezone**.
-- Day-level granularity is enough for ranking (no hourly "best window").
-- A city maps to a single point (the geocoder's coordinates); we don't search for nearby resorts or beaches.
-- Open-Meteo's free, non-commercial API is acceptable for this exercise.
-- Scoring is a heuristic, not a validated model; thresholds are configurable.
-
-## 3. Architecture
+## 1. Architecture
 
 A **modular monolith** with two entrypoints from one codebase (`api`, `worker`) sharing **Postgres** for both data and the job queue (pg-boss). Inside, code is split into feature modules that are layered, with ports (interfaces) at the I/O seams ([ADR 0008](decisions/0008-layered-modules-ports-at-seams.md)).
 
@@ -67,7 +48,7 @@ flowchart LR
 ### Refresh flow
 An hourly cron job selects locations with `last_requested_at > now() - 7d` and stale data, and enqueues `fetch-forecast` jobs (rate-limited, retried with backoff). Locations nobody asks about stop being refreshed automatically.
 
-## 4. Components
+## 2. Components
 
 | Module | Responsibility |
 |---|---|
@@ -109,7 +90,7 @@ Dependency direction: `graphql → ranking ← {locations, weather, jobs}`, `ran
 | Forecast | `api.open-meteo.com/v1/forecast` | `daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,rain_sum,snowfall_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,weather_code,uv_index_max`, `hourly=snow_depth`, `forecast_days=7`, `timezone=auto` |
 | Marine | `marine-api.open-meteo.com/v1/marine` | `daily=wave_height_max,wave_period_max,wave_direction_dominant,swell_wave_height_max,swell_wave_period_max,wind_wave_height_max`, `forecast_days=7`, `timezone=auto` |
 
-## 5. Data model
+## 3. Data model
 
 | Table | Key | Contents |
 |---|---|---|
@@ -123,7 +104,7 @@ Dependency direction: `graphql → ranking ← {locations, weather, jobs}`, `ran
 - Raw payloads allow re-processing if extracted columns change, and help debugging.
 - Scores are **not stored**: they're computed on read from daily rows (microseconds), so scoring changes need no backfill.
 
-## 6. API (GraphQL)
+## 4. API (GraphQL)
 
 ```graphql
 scalar Date
@@ -174,7 +155,7 @@ enum Rating { POOR FAIR GOOD EXCELLENT }
 Errors: `BAD_USER_INPUT` (city 1–100 chars, days 1–7, ISO-2 country), `LOCATION_NOT_FOUND`, `UPSTREAM_UNAVAILABLE` (only when no stored data exists).
 Operational endpoints: `GET /health` (liveness), `GET /ready` (DB reachable).
 
-## 7. Scoring
+## 5. Scoring
 
 Each factor maps to a 0–1 sub-score via piecewise-linear "comfort band" curves; sub-scores are combined as a weighted sum, then **hard caps** apply for dangerous/pointless conditions. Reasons come from the 2–3 most influential factors. Ratings: < 40 POOR, 40–59 FAIR, 60–79 GOOD, ≥ 80 EXCELLENT. Weekly score = mean of daily scores; `bestDay` = argmax.
 
@@ -185,7 +166,7 @@ Each factor maps to a 0–1 sub-score via piecewise-linear "comfort band" curves
 | Outdoor sightseeing | precipitation (0.35), apparent temp (0.25), sunshine fraction (0.2), wind (0.1), UV (0.1) | thunderstorm, heavy rain/snow | never |
 | Indoor sightseeing | baseline 50, rises as outdoor conditions worsen | none | never |
 
-## 8. Tech choices
+## 6. Tech choices
 
 | Concern | Choice | Why / alternatives |
 |---|---|---|
@@ -199,7 +180,7 @@ Each factor maps to a 0–1 sub-score via piecewise-linear "comfort band" curves
 | Testing | Vitest, Testcontainers, msw | Real Postgres in tests; an Open-Meteo fake over recorded fixtures; see [testing](testing.md) |
 | Delivery | Dockerfile, docker-compose (`postgres`, `api`, `worker`), GitHub Actions | One-command local run |
 
-## 9. Key decisions & trade-offs
+## 7. Key decisions & trade-offs
 
 Full context for each decision lives in the [decision records](decisions/):
 [0001 Monolith + Postgres + pg-boss](decisions/0001-monolith-postgres-pg-boss.md) ·
@@ -221,7 +202,7 @@ Full context for each decision lives in the [decision records](decisions/):
 | **Upsert latest forecast** (plus raw payload log) | Simple reads; no full history of forecast revisions | Append-only snapshots per fetch |
 | **Rule-based heuristics** | Transparent, explainable, testable; not empirically validated | ML / learned models (no labelled data) |
 
-## 10. Error handling
+## 8. Error handling
 
 - Upstream: 5 s timeout, 3 retries with exponential backoff + jitter on 5xx/429/network errors; no retry on 4xx; every attempt recorded in `forecast_fetches`.
 - Partial failure: if Marine fails but Forecast succeeds, surfing is unavailable with "marine data temporarily unavailable", distinct from "no marine forecast (inland)". `has_marine` is only set on a confirmed empty response.
@@ -229,13 +210,13 @@ Full context for each decision lives in the [decision records](decisions/):
 - Worker: pg-boss retries; persistent failures are logged and retried on the next cron tick without blocking other locations.
 - Graceful shutdown on SIGTERM for both processes; query depth/cost limits and per-IP rate limiting on the API.
 
-## 11. Testing
+## 9. Testing
 
 1. **Unit**: scorers (table-driven: blizzard day, perfect beach day, heatwave, inland), aggregation, rating thresholds, timezone/date handling.
 2. **Integration** (primary): repositories, ingest, clients, `RankingService` and jobs against real Postgres (Testcontainers), with Open-Meteo replaced by a fake built on msw and recorded fixtures. Nothing of our own is mocked.
 3. **End-to-end**: GraphQL queries against the Yoga app covering cold miss, fresh hit, stale-while-revalidate, inland city, unknown city and upstream outage.
 
-## 12. Risks
+## 10. Risks
 
 | Risk | Impact | Mitigation |
 |---|---|---|
@@ -245,17 +226,3 @@ Full context for each decision lives in the [decision records](decisions/):
 | Open-Meteo free-tier limits and terms (non-commercial) | Throttling or a licensing issue in production | De-duplication, active-window refresh, backoff on 429; commercial plan for production |
 | Heuristic scoring is subjective | Rankings disputed by users/domain experts | Config-driven thresholds, reasons in the output, easy to tune |
 | Postgres as both store and queue | Contention at high scale | Fine for this scope; move the queue to Redis/BullMQ if needed |
-
-## 13. Open questions
-
-1. Who consumes the API (web/mobile app, internal service)? This affects whether a location search step, pagination or subscriptions are worth adding.
-2. Should near-term days weigh more in the weekly score, given forecast uncertainty decreases with lead time?
-3. What does "indoor sightseeing" mean to the business: weather-independent, or "best when outdoors is bad" (current interpretation)?
-4. Should skiing/surfing look beyond the city point (nearest resort or beach within X km)?
-5. Expected traffic and number of distinct locations? This drives TTL, refresh window and caching decisions.
-6. Is a public, unauthenticated API acceptable, or is auth/API-key needed?
-7. Units and locale for reasons (metric/imperial, i18n)?
-
-## 14. Out of scope
-
-Authentication, multi-region deployment, user preferences/personalised scoring, hourly best-time windows, wind-direction-aware surf scoring (needs coastline orientation), nearest resort/beach search, historical analytics, a frontend.
