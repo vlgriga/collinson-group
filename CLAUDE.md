@@ -22,9 +22,9 @@ before starting it.
 | set up the machine, run checks, change the schema or config | [getting-started.md](docs/getting-started.md) |
 | plan a feature, pick up an issue, move the board, open or merge a PR | [workflow-lifecycle.md](docs/workflow-lifecycle.md) |
 | name a branch, write a commit or a PR title | [git-flow.md](docs/git-flow.md) |
-| write any code | [styleguide.md](docs/styleguide.md), [architecture.md](docs/architecture.md) |
+| write any code | [styleguide.md](docs/styleguide.md), [architecture/](docs/architecture/), the feature's [design doc](docs/design/) |
 | write or change a test | [testing.md](docs/testing.md) |
-| log anything | [logging.md](docs/logging.md) |
+| log anything | [logging.md](docs/architecture/logging.md) |
 | review a change | [review.md](docs/review.md) |
 | go against a recorded decision | [decisions/](docs/decisions/) |
 

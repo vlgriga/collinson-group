@@ -1,8 +1,8 @@
 # Product requirements
 
-> Related: [Task](../TASK.md) · [Architecture](architecture.md) · [Decisions](decisions/)
+> Related: [Task](../TASK.md) · [Architecture](architecture/) · [Decisions](decisions/)
 
-What the service must do and why. How it does it is in [architecture](architecture.md) and the
+What the service must do and why. How it does it is in [architecture](architecture/) and the
 [decision records](decisions/); nothing here chooses a technology the brief does not.
 
 ## Problem

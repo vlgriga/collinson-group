@@ -16,7 +16,7 @@ Run it in plan mode: steps 1–4 only read and ask, and leaving plan mode is the
 
 ## 1. Know the ground
 
-- Read [prd.md](../../../docs/prd.md), the [architecture](../../../docs/architecture.md), the
+- Read [prd.md](../../../docs/prd.md), the [architecture](../../../docs/architecture/), the
   [decisions](../../../docs/decisions/) and the existing design docs in `docs/design/`.
 - Read what is already planned and done, so nothing is planned twice:
   `gh api --paginate 'repos/{owner}/{repo}/milestones?state=all' --jq '.[] | "\(.title) \(.state)"'`

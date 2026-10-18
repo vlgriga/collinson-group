@@ -37,7 +37,7 @@ Formatting is enforced by Prettier and ESLint (`typescript-eslint` strict + type
 - Never swallow errors silently; either handle with a documented fallback (e.g. serve stale data) or rethrow.
 
 ## Logging
-The full design (sinks, library bridging, levels, rules) is in [logging.md](logging.md). In short:
+The full design (sinks, library bridging, levels, rules) is in [logging.md](architecture/logging.md). In short:
 - pino, structured: `logger.info({ locationId, durationMs }, 'forecast fetched')`. Message is a constant string; data goes in fields.
 - Child loggers carry `requestId` / `jobId`.
 - No `console.*`; no secrets or full upstream payloads in logs.

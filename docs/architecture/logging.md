@@ -1,6 +1,6 @@
 # Logging
 
-> Related: [Architecture](architecture.md) · [Style guide](styleguide.md#logging) · [Getting started](getting-started.md#where-the-configuration-lives)
+> Related: [Architecture](README.md) · [Style guide](../styleguide.md#logging) · [Getting started](../getting-started.md#where-the-configuration-lives)
 
 ## The problem
 

@@ -1,6 +1,6 @@
 # Review
 
-> Related: [Workflow](workflow-lifecycle.md) · [Architecture](architecture.md) · [Style guide](styleguide.md) · [Testing](testing.md) · [Decisions](decisions/)
+> Related: [Workflow](workflow-lifecycle.md) · [Architecture](architecture/) · [Style guide](styleguide.md) · [Testing](testing.md) · [Decisions](decisions/)
 
 Who checks what, and against which document.
 
@@ -65,10 +65,10 @@ The roles are the deep review; the shallow pass has none.
 
 | Role | Area | Applies to | Documents |
 |---|---|---|---|
-| Architect | Module boundaries, dependency direction, ports, what belongs where | `src/`, `src/graphql/schema.graphql`, migrations, new modules and the seams between them | [architecture.md](architecture.md), [ADR 0008](decisions/0008-layered-modules-ports-at-seams.md), the other [decisions](decisions/) |
-| Engineer | Style and bugs | Any executable code: `src/`, `test/`, `scripts/`, the `Makefile`, `.github/workflows/` | [styleguide.md](styleguide.md), [logging.md](logging.md) |
+| Architect | Module boundaries, dependency direction, ports, what belongs where | `src/`, `src/graphql/schema.graphql`, migrations, new modules and the seams between them | [architecture/](architecture/), the feature's [design doc](design/), [ADR 0008](decisions/0008-layered-modules-ports-at-seams.md), the other [decisions](decisions/) |
+| Engineer | Style and bugs | Any executable code: `src/`, `test/`, `scripts/`, the `Makefile`, `.github/workflows/` | [styleguide.md](styleguide.md), [logging.md](architecture/logging.md) |
 | QA | Test coverage and the quality of the tests | `src/` and `test/` | [testing.md](testing.md) |
-| SQL | Queries, transactions, locks and the job queue | Code that reaches Postgres — `src/db/` (schema and migrations), the repositories in `locations/` and `weather/`, ingest, and `jobs/`, since pg-boss lives in the same database | [architecture.md §3](architecture.md#3-data-model), [styleguide.md](styleguide.md#database), ADRs [0001](decisions/0001-monolith-postgres-pg-boss.md), [0002](decisions/0002-hybrid-refresh-strategy.md), [0005](decisions/0005-daily-granularity-upsert.md), [0006](decisions/0006-drizzle-orm.md) |
+| SQL | Queries, transactions, locks and the job queue | Code that reaches Postgres — `src/db/` (schema and migrations), the repositories in `locations/` and `weather/`, ingest, and `jobs/`, since pg-boss lives in the same database | the feature's [design doc](design/) (data model), [styleguide.md](styleguide.md#database), ADRs [0001](decisions/0001-monolith-postgres-pg-boss.md), [0002](decisions/0002-hybrid-refresh-strategy.md), [0005](decisions/0005-daily-granularity-upsert.md), [0006](decisions/0006-drizzle-orm.md) |
 | Team lead | A light pass over the change as a whole, and how it sits with the other open pull requests | Always | [workflow-lifecycle.md](workflow-lifecycle.md), [git-flow.md](git-flow.md) |
 
 Applicability answers whether a role has anything to do on this particular change. A role with

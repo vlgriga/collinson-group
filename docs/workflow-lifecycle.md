@@ -61,7 +61,7 @@ best run in plan mode. A feature is a capability the author names — activity r
 refresh.
 
 1. **Requirements.** The feature is read against the [PRD](prd.md), the
-   [architecture](architecture.md), the [decisions](decisions/) and what is already delivered, and
+   [architecture](architecture/), the [decisions](decisions/) and what is already delivered, and
    the author is asked until it is clear which requirements it covers and which it doesn't.
 2. **Design.** How the feature is built, within the architecture: the modules it touches, data
    flow, data model and API changes, error handling, alternatives, testing, risks. It becomes the
@@ -126,7 +126,7 @@ Reviews are done with Claude Code's `/code-review`. The level is chosen to fit t
   still cheap: wrong logic, missing error handling, leftovers. Fix the findings, or answer them in
   the PR description.
 - **Deep — after `make ready`:** `/code-review high` on the PR. It checks correctness against
-  [architecture](architecture.md), test coverage against [testing](testing.md), and conventions
+  [architecture](architecture/), test coverage against [testing](testing.md), and conventions
   against the [style guide](styleguide.md). Every finding is fixed or answered before merge.
 
 A design deviation found in review doesn't get settled in the PR thread. It becomes an
@@ -211,7 +211,7 @@ Branch protection on `main` is in [git-flow.md](git-flow.md#ready-to-merge).
 
 ## Definition of done
 
-- Behaviour matches the issue's acceptance criteria and the [architecture](architecture.md); any
+- Behaviour matches the issue's acceptance criteria and the [architecture](architecture/); any
   significant deviation is recorded as an [ADR](decisions/).
 - Tests are added at the right layer ([testing](testing.md)), and `make gate` and CI are green.
 - Code follows the [style guide](styleguide.md).
