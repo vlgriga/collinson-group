@@ -76,13 +76,15 @@ approves or edits; rework until they approve. Nothing is created before that.
 
 ## 5. File, write, hand over
 
-`<feature>` below is the feature's name; every `<issue>` is an issue number.
+`<feature>` below is the feature's name; every `<issue>` is an issue number. A feature may
+already have its milestone and its "Design: <feature>" issue, filed ahead of planning: use them,
+and update the design issue's requirements if planning changed them.
 
-1. The milestone:
+1. The milestone, unless it exists:
    `gh api 'repos/{owner}/{repo}/milestones' -f title='<Feature>' -f description='<goal>'`.
 2. The issues, in order, each with `--milestone '<Feature>'` and its `area:*` labels: first
-   **"Design: <feature>"** (`area:docs`), then one per step, each blocked by the design issue and
-   by whatever else it named. Body:
+   **"Design: <feature>"** (`area:docs`), unless it exists, then one per step, each blocked by the
+   design issue and by whatever else it named. Body:
 
    ```markdown
    <what is wanted and why, in two or three sentences>
