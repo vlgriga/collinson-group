@@ -1,6 +1,6 @@
 # Architecture
 
-> Related: [Requirements](prd.md) · [Decisions](decisions/) · [Workflow](workflow-lifecycle.md) · [Style guide](styleguide.md) · [Testing](testing.md) · [Implementation plan](implementation-plan.md)
+> Related: [Requirements](prd.md) · [Decisions](decisions/) · [Workflow](workflow-lifecycle.md) · [Style guide](styleguide.md) · [Testing](testing.md)
 
 A backend service that takes a city or town and ranks how good each of the next 7 days will be for **skiing, surfing, outdoor sightseeing and indoor sightseeing**, using weather data from Open-Meteo that is persisted and refreshed rather than fetched per request.
 
