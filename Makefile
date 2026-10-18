@@ -57,7 +57,9 @@ test: ## Every test level, against real Postgres in containers (Docker must be r
 	npm test
 
 build: ## Compile src/ to dist/
-	npm run build
+	@# tsc refuses a project with no inputs (TS18003); until src/ has code there is nothing to build.
+	@if [ -n "$$(find src -name '*.ts' 2>/dev/null | head -n1)" ]; then npm run build; \
+	else echo 'build: src/ has no TypeScript yet, nothing to compile'; fi
 
 gate: check test build ## check + test + build: must pass before any push
 
