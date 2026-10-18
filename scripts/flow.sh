@@ -141,9 +141,7 @@ merge() {
   body=$(tail -n +3 "$msg")
   gh pr merge "$pr" --squash --subject "$subject" --body "$body"
   rm -f "$msg"
-  if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
-    git push origin --delete "$branch"
-  fi
+  # The remote branch is deleted by the repository's delete-on-merge setting.
   NAME=$(basename "$(git rev-parse --show-toplevel)") FORCE=1 cleanup
 }
 
