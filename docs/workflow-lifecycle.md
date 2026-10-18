@@ -1,7 +1,9 @@
 # How work flows
 
+The [product requirements](prd.md) are planned a feature at a time into a design doc and issues.
 An issue becomes a worktree, a worktree becomes a pull request, and a pull request becomes a
-squashed commit on `main`. `main` is the deliverable; there are no tagged releases.
+squashed commit on `main` once the author has approved it. `main` is the deliverable; there are
+no tagged releases.
 
 Each step is one `make` target, and each target does what the step means: `start` cuts the branch
 and moves the issue, `gate` is the check before the push, `pr` opens the draft once the shallow
@@ -49,9 +51,32 @@ labels exist, and what each means, is declared in `.github/labels.yml` and synce
 `scripts/board.sh labels`. Adding one there is a decision; using one that is not there is a typo
 waiting to become a second spelling.
 
-An issue states what is wanted and how we'll know it is done: a short description and acceptance
-criteria. The milestones in the [implementation plan](implementation-plan.md) are the initial
-issues.
+An issue states what is wanted and how we'll know it is done: a short description, the
+requirements it covers and acceptance criteria. Issues come from [planning](#planning).
+
+## Planning
+
+Work is planned a feature at a time, when the author asks for it, with the `/plan-feature` skill,
+best run in plan mode. A feature is a capability the author names — activity ranking, background
+refresh.
+
+1. **Requirements.** The feature is read against the [PRD](prd.md), the
+   [architecture](architecture.md), the [decisions](decisions/) and what is already delivered, and
+   the author is asked until it is clear which requirements it covers and which it doesn't.
+2. **Design.** How the feature is built, within the architecture: the modules it touches, data
+   flow, data model and API changes, error handling, alternatives, testing, risks. It becomes the
+   feature's design doc, `docs/design/<feature>.md`.
+3. **Steps.** The feature is cut into steps. Each is a vertical slice, shown working through its
+   entry point, small enough for one pull request, and leaves `main` green; the first step of the
+   first feature is a tracer through every layer. Each names the requirements it covers, its
+   acceptance criteria and what it is blocked by.
+4. **Approval.** The author approves the proposal or edits it. Nothing is filed before that.
+5. **Issues and the design doc.** A GitHub milestone named for the feature holds a "Design" issue
+   and one issue per step, each blocked by the design issue, on the board in *Backlog*. The design
+   doc is written under the design issue and goes through a pull request like any other change.
+
+Once the design is merged, each step is done in a session of its own, with the `/do-issue` skill:
+the [flow](#the-flow) below, from the TDD question to a ready pull request.
 
 ## Before the implementation
 
@@ -69,7 +94,7 @@ make start ISSUE=12 TITLE="<title>"         # state the title and skip reading i
 make gate                                   # check, all tests, build (also the pre-push hook)
 make pr                                     # gate, push, open draft PR "Closes #12"
 make ready                                  # lift the draft, issue → In Review
-make merge                                  # squash-merge, delete branch, remove worktree
+make merge                                  # on the author's go-ahead: squash-merge, remove worktree
 
 make cleanup                                # remove the worktree, from inside it
 make cleanup NAME=<directory>               # or name it from anywhere
@@ -82,9 +107,11 @@ make cleanup NAME=<directory>               # or name it from anywhere
 - **`gate`** must pass before anything is pushed. The pre-push hook runs it, and CI runs it again.
 - **`pr`** refuses a branch that doesn't match the template. Run the shallow review before calling it.
 - **`ready`** marks the PR ready for review. The deep review happens here.
-- **`merge`** refuses a PR that is not [ready to merge](git-flow.md#ready-to-merge), composes the
-  [squash message](git-flow.md#the-squash-message), squash-merges, deletes the branch and runs
-  `cleanup`. Merging closes the issue, and the board moves it to *Done*.
+- **`merge`** runs only once the author, having reviewed the pull request, has said to merge it;
+  a go-ahead covers that one pull request. It refuses a PR that is not
+  [ready to merge](git-flow.md#ready-to-merge), composes the
+  [squash message](git-flow.md#the-squash-message), squash-merges and runs `cleanup`; the
+  repository deletes the remote branch. Merging closes the issue, and the board moves it to *Done*.
 - **`cleanup`** removes a worktree and its local branch, and stops with uncommitted changes or
   commits not on `origin` unless given `FORCE=1`.
 
@@ -189,6 +216,7 @@ Branch protection on `main` is in [git-flow.md](git-flow.md#ready-to-merge).
 - Tests are added at the right layer ([testing](testing.md)), and `make gate` and CI are green.
 - Code follows the [style guide](styleguide.md).
 - Shallow and deep review findings are fixed or answered.
+- The author has reviewed the pull request and approved the merge.
 - Commits, PR title and description follow [git-flow.md](git-flow.md), deliberate choices recorded
   as `Decision:` footers.
 - Docs are updated if behaviour, config or scripts changed.

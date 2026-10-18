@@ -159,6 +159,10 @@ Stated as values, so the bar moves by changing a number rather than the prose ar
 - Deep review: ended with nothing blocking ([review.md](review.md#deep))
 - Open review conversations: 0
 
+Beyond these, the author's go-ahead: given for this pull request, after reviewing it. It is not a
+GitHub approval, which the author cannot give their own pull request, and `make merge` cannot check
+it, so whoever runs `make merge` has it first.
+
 Approvals are 0 because this is a one-person repository: GitHub does not count the author's own
 approval, so 1 would turn every merge into an admin bypass. The deep review loop is the review.
 Raise the number to 1 when a second person joins.

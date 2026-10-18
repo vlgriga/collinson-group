@@ -5,9 +5,10 @@ and ranks the next 7 days for skiing, surfing, outdoor and indoor sightseeing, f
 persisted in Postgres and refreshed in the background by a pg-boss worker. The brief is
 [TASK.md](TASK.md).
 
-**State:** design is done, code is not started. Work goes milestone by milestone through
-[docs/implementation-plan.md](docs/implementation-plan.md). A command or file named below that does
-not exist yet belongs to a milestone that hasn't landed: build it as the plan says, don't invent a
+**State:** the tooling and the [product requirements](docs/prd.md) are in place; code is not
+started. Work is planned a feature at a time into a design doc and issues on the
+[board](https://github.com/users/vlgriga/projects/2). A command or file named below that does not
+exist yet belongs to an issue that hasn't landed: build it as that issue says, don't invent a
 substitute.
 
 ## Where the rules are
@@ -19,7 +20,7 @@ before starting it.
 |---|---|
 | decide what a change must do | [prd.md](docs/prd.md) |
 | set up the machine, run checks, change the schema or config | [getting-started.md](docs/getting-started.md) |
-| pick up an issue, move the board, open or merge a PR | [workflow-lifecycle.md](docs/workflow-lifecycle.md) |
+| plan a feature, pick up an issue, move the board, open or merge a PR | [workflow-lifecycle.md](docs/workflow-lifecycle.md) |
 | name a branch, write a commit or a PR title | [git-flow.md](docs/git-flow.md) |
 | write any code | [styleguide.md](docs/styleguide.md), [architecture.md](docs/architecture.md) |
 | write or change a test | [testing.md](docs/testing.md) |
@@ -29,8 +30,12 @@ before starting it.
 
 ## How work flows
 
-Issue → TDD question → `make start` → implementation → `make gate` → shallow review → `make pr` →
-`make ready` → deep review → `make merge`. Described in
+PRD → `/plan-feature` (plan mode) → the author approves → a milestone for the feature with a
+"Design" issue and one issue per step → the design doc PR, merged on the author's go-ahead.
+
+One issue per session, with `/do-issue <n>`: TDD question → `make start` → implementation →
+`make gate` → shallow review → `make pr` → `make ready` → deep review → CI green → **stop**. The
+author reviews the PR; `make merge` runs only on their "merge" for that PR. Described in
 [workflow-lifecycle.md](docs/workflow-lifecycle.md).
 
 ## Commands
@@ -42,7 +47,7 @@ every target.
 make help          # every target, one line each
 make doctor        # what's missing on this machine, and the command that fixes it
 make install       # npm ci + git hooks
-make migrate       # Postgres from docker compose + migrations
+make migrate       # Postgres from docker compose + migrations (none exist yet)
 make dev-api       # http://localhost:4000/graphql
 make dev-worker
 make check         # lint, format check, typecheck; changes nothing
@@ -53,7 +58,7 @@ make gate          # check + test + build; must pass before any push
 make codegen       # after editing schema.graphql
 make migration     # after editing src/db/schema.ts; read the generated SQL
 
-make start ISSUE=<n> [TYPE=bugfix]   # worktree + branch, issue → In Progress
+make start ISSUE=<n> [TYPE=bugfix] [TITLE=<title>]   # worktree + branch, issue → In Progress
 make pr | make ready | make merge | make cleanup
 make branch-check [BRANCH=<name>]    # the branch template, as the commit-msg hook runs it
 ```
@@ -91,8 +96,9 @@ to narrow.
   then red → green → refactor one scenario at a time ([testing.md](docs/testing.md#tdd)).
 
 **Git**
-- Never commit to `main`: every change goes through an issue, a worktree and a PR. The one
-  exception is milestone M-1, which builds that tooling and so is done on `main`.
+- Never commit to `main`: every change goes through an issue, a worktree and a PR; `main` is
+  protected.
+- Never merge without the author's go-ahead for that PR; one go-ahead covers one PR.
 - Branch `<type>/<n>-<slug>`; commit `<type>(<scope>): #<n> <description>`; everything in English.
 - A choice made on purpose, where another would have looked just as right, gets a
   `Decision: <choice> — <why>` footer.
