@@ -17,6 +17,7 @@ before starting it.
 
 | Before you… | Read |
 |---|---|
+| decide what a change must do | [prd.md](docs/prd.md) |
 | set up the machine, run checks, change the schema or config | [getting-started.md](docs/getting-started.md) |
 | pick up an issue, move the board, open or merge a PR | [workflow-lifecycle.md](docs/workflow-lifecycle.md) |
 | name a branch, write a commit or a PR title | [git-flow.md](docs/git-flow.md) |
