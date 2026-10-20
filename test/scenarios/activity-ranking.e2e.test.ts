@@ -78,6 +78,30 @@ describe('activityRanking', () => {
       }) as unknown,
     ]);
   });
+
+  it('stores the days in metric units, with durations in hours', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    const [today] = await readDailyWeather(app.db);
+    expect(today).toEqual(
+      expect.objectContaining({
+        date: '2026-10-18',
+        precipitationMm: 3.1,
+        apparentTemperatureMaxC: 15.6,
+        // 5120.99 s and 38539.56 s in the recording
+        sunshineDurationH: expect.closeTo(1.4225, 4) as unknown,
+        daylightDurationH: expect.closeTo(10.7054, 4) as unknown,
+        windSpeedMaxKmh: 17.3,
+        uvIndexMax: 1.65,
+        weatherCode: 80,
+      }),
+    );
+  });
 });
 
 const WEEK = [
