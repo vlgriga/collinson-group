@@ -1,0 +1,129 @@
+"""
+A calendar day in the place's own timezone, written YYYY-MM-DD.
+"""
+scalar Date
+
+type Query {
+  """
+  How good each of the next 7 days is for each activity in a city or town.
+  """
+  activityRanking(
+    """
+    The name of a city or town; the geocoder's top match is taken.
+    """
+    city: String!
+  ): ActivityRanking!
+}
+
+"""
+The coming days of one place, scored per activity.
+"""
+type ActivityRanking {
+  """
+  The place the city was taken to mean.
+  """
+  location: Location!
+  """
+  Each activity with its days and its weekly score.
+  """
+  activities: [ActivityForecast!]!
+}
+
+"""
+How good the coming days are for one activity.
+"""
+type ActivityForecast {
+  """
+  The activity scored.
+  """
+  activity: Activity!
+  """
+  The weekly score, 0–100: the mean of the days' scores.
+  """
+  score: Int
+  """
+  The day with the highest score; the earliest of them on a tie.
+  """
+  bestDay: Date
+  """
+  Today and the days after it, in date order.
+  """
+  days: [DayScore!]!
+}
+
+"""
+How good one day is for an activity, and why.
+"""
+type DayScore {
+  """
+  The day, in the place's timezone.
+  """
+  date: Date!
+  """
+  0–100, higher is better.
+  """
+  score: Int!
+  """
+  The score in words.
+  """
+  rating: Rating!
+  """
+  What decided the score, most influential first, in English and metric units.
+  """
+  reasons: [String!]!
+}
+
+"""
+A city or town as the geocoder knows it.
+"""
+type Location {
+  """
+  The place's name.
+  """
+  name: String!
+  """
+  The country's name, in English.
+  """
+  country: String!
+  """
+  ISO 3166-1 alpha-2.
+  """
+  countryCode: String!
+  """
+  The first-level region, such as a state or province, when the geocoder knows one.
+  """
+  admin1: String
+  """
+  Degrees, WGS 84.
+  """
+  latitude: Float!
+  """
+  Degrees, WGS 84.
+  """
+  longitude: Float!
+  """
+  Metres above sea level, when the geocoder knows it.
+  """
+  elevation: Float
+  """
+  The IANA timezone the days are counted in, such as Europe/Paris.
+  """
+  timezone: String!
+}
+
+"""
+What the days are scored for.
+"""
+enum Activity {
+  OUTDOOR_SIGHTSEEING
+}
+
+"""
+A day's score in words: below 40 POOR, 40–59 FAIR, 60–79 GOOD, 80 and above EXCELLENT.
+"""
+enum Rating {
+  POOR
+  FAIR
+  GOOD
+  EXCELLENT
+}

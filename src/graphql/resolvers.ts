@@ -1,0 +1,14 @@
+import type { RankingService } from '../ranking/index.js';
+import type { Resolvers } from './generated/resolvers.js';
+
+export function createResolvers(ranking: RankingService): Resolvers {
+  return {
+    Query: {
+      activityRanking: async (_parent, { city }) => {
+        const { location, activities } = await ranking.rank({ city });
+        const { elevationM, ...place } = location;
+        return { location: { ...place, elevation: elevationM }, activities };
+      },
+    },
+  };
+}

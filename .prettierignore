@@ -4,6 +4,8 @@ logs/
 package-lock.json
 src/db/migrations/
 src/graphql/generated/
+# Recorded by scripts/record-fixtures.ts and kept as written there.
+test/fixtures/
 .claude/
 # Docs are wrapped by hand; Prettier would realign every table.
 *.md

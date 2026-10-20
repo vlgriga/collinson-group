@@ -5,7 +5,13 @@ const config: CodegenConfig = {
   generates: {
     'src/graphql/generated/resolvers.ts': {
       plugins: ['typescript', 'typescript-resolvers'],
-      config: { useTypeImports: true, enumsAsTypes: true },
+      config: {
+        useTypeImports: true,
+        enumsAsTypes: true,
+        // A scalar left unmapped would be typed `any`.
+        strictScalars: true,
+        scalars: { Date: 'string' },
+      },
     },
   },
 };

@@ -1,6 +1,8 @@
 import type { Env } from './config/index.js';
 import { connectDatabase, type Database } from './db/index.js';
-import type { Clock } from './ranking/index.js';
+import { createGraphqlServer, type GraphqlServer } from './graphql/index.js';
+import { GeocodingClient, LocationService } from './locations/index.js';
+import { RankingService, type Clock } from './ranking/index.js';
 
 export type AppDependencies = {
   env: Env;
@@ -10,6 +12,8 @@ export type AppDependencies = {
 export type App = {
   clock: Clock;
   db: Database;
+  /** The GraphQL API: api.ts serves it over HTTP, tests call its `fetch`. */
+  yoga: GraphqlServer;
   /** Releases what the app holds open; the caller stops taking work first. */
   close: () => Promise<void>;
 };
@@ -20,5 +24,7 @@ export type App = {
  */
 export function createApp({ env, clock }: AppDependencies): App {
   const database = connectDatabase(env.DATABASE_URL);
-  return { clock, db: database.db, close: database.close };
+  const locations = new LocationService({ geocoding: new GeocodingClient() });
+  const ranking = new RankingService({ locations });
+  return { clock, db: database.db, yoga: createGraphqlServer(ranking), close: database.close };
 }
