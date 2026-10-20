@@ -134,6 +134,19 @@ describe('activityRanking', () => {
     expect(await readLocations(app.db)).toEqual([]);
   });
 
+  it('answers LOCATION_NOT_FOUND for a city known only outside the country given', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix', countryCode: 'US' });
+
+    // Then
+    expect(response.errors?.map(({ extensions }) => extensions?.code)).toEqual([
+      'LOCATION_NOT_FOUND',
+    ]);
+  });
+
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
