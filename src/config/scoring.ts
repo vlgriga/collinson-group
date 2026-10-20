@@ -20,6 +20,22 @@ export type Factor = {
   readonly curve: Curve;
 };
 
+/** The WMO weather interpretation codes Open-Meteo reports a thunderstorm with. */
+const WMO_THUNDERSTORM = { slightOrModerate: 95, withSlightHail: 96, withHeavyHail: 99 } as const;
+
+/** A condition that limits a day's score, however good its factors are. */
+type Cap = { readonly maxScore: number };
+
+type OutdoorSightseeingRules = {
+  readonly factors: Record<
+    'precipitation' | 'apparentTemperature' | 'sunshine' | 'wind' | 'uv',
+    Factor
+  >;
+  readonly caps: {
+    readonly thunderstorm: Cap & { readonly weatherCodes: readonly number[] };
+  };
+};
+
 export const OUTDOOR_SIGHTSEEING = {
   factors: {
     precipitation: {
@@ -72,4 +88,12 @@ export const OUTDOOR_SIGHTSEEING = {
       ],
     },
   },
-} as const satisfies { factors: Record<string, Factor> };
+  caps: {
+    thunderstorm: {
+      // Lightning makes open squares, towers and viewpoints unsafe, however pleasant the rest of
+      // the day.
+      weatherCodes: Object.values(WMO_THUNDERSTORM),
+      maxScore: 10,
+    },
+  },
+} as const satisfies OutdoorSightseeingRules;

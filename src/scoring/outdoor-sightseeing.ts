@@ -9,8 +9,15 @@ const REASON_COUNT = 3;
 
 type Scored = { weight: number; subScore: number; reason: string };
 
+/** A condition that limits the day's score whatever the factors make of it. */
+type Cap = { maxScore: number; reason: string };
+
 export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
-  const { factors } = OUTDOOR_SIGHTSEEING;
+  const { factors, caps } = OUTDOOR_SIGHTSEEING;
+  const applied: Cap[] = [];
+  if (caps.thunderstorm.weatherCodes.some((code) => code === day.weatherCode)) {
+    applied.push({ maxScore: caps.thunderstorm.maxScore, reason: 'Thunderstorm' });
+  }
   // In descending weight, which the reasons fall back on when factors cost the same.
   const scored = [
     score(factors.precipitation, day.precipitationMm, (mm) =>
@@ -29,9 +36,10 @@ export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
     score(factors.wind, day.windSpeedMaxKmh, (kmh) => `Wind up to ${kmh.toFixed(0)} km/h`),
     score(factors.uv, day.uvIndexMax, (index) => `UV index up to ${index.toFixed(0)}`),
   ].filter((factor) => factor !== undefined);
+  const uncapped = MAX_SCORE * weightedMean(scored);
   return {
-    score: Math.round(MAX_SCORE * weightedMean(scored)),
-    reasons: costliest(scored).map(({ reason }) => reason),
+    score: Math.round(Math.min(uncapped, ...applied.map(({ maxScore }) => maxScore))),
+    reasons: [...applied, ...costliest(scored)].map(({ reason }) => reason).slice(0, REASON_COUNT),
   };
 }
 

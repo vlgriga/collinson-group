@@ -45,6 +45,31 @@ describe('scoreOutdoorSightseeing', () => {
     expect(score).toBe(0);
   });
 
+  it.each([95, 96, 99] as const)(
+    'caps the day at 10 in a thunderstorm (weather code %i)',
+    (weatherCode) => {
+      // Given
+      const day = buildDay({ ...IDEAL, weatherCode });
+
+      // When
+      const { score } = scoreOutdoorSightseeing(day);
+
+      // Then
+      expect(score).toBe(10);
+    },
+  );
+
+  it('leads the reasons with a thunderstorm', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, weatherCode: 95 });
+
+    // When
+    const { reasons } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(reasons).toEqual(['Thunderstorm', 'No precipitation', 'Feels like 20 °C']);
+  });
+
   it('gives as reasons the three factors that cost the most points, the costliest first', () => {
     // Given
     const day = buildDay({
