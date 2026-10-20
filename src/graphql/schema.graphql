@@ -5,13 +5,21 @@ scalar Date
 
 type Query {
   """
-  How good each of the next 7 days is for each activity in a city or town.
+  How good each of the coming days is for each activity in a city or town.
   """
   activityRanking(
     """
-    The name of a city or town; the geocoder's top match is taken.
+    The name of a city or town, 1–100 characters; the geocoder's top match is taken.
     """
     city: String!
+    """
+    ISO 3166-1 alpha-2, in either case, such as FR: limits the match to that country.
+    """
+    countryCode: String
+    """
+    How many days to score, today first: 1–7.
+    """
+    days: Int! = 7
   ): ActivityRanking!
 }
 

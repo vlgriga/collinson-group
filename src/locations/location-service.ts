@@ -12,7 +12,13 @@ export class LocationService implements LocationResolver {
     this.#repository = dependencies.repository;
   }
 
-  async resolve({ city }: { city: string }): Promise<Location> {
-    return this.#repository.save(await this.#geocoding.search(city));
+  async resolve({
+    city,
+    countryCode,
+  }: {
+    city: string;
+    countryCode: string | null;
+  }): Promise<Location> {
+    return this.#repository.save(await this.#geocoding.search(city, countryCode));
   }
 }

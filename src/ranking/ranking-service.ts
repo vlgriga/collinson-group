@@ -11,6 +11,8 @@ import type { Clock, ForecastFetcher, Location, LocationResolver } from './ports
 
 export type RankingRequest = {
   city: string;
+  /** ISO 3166-1 alpha-2; null when the match may be in any country. */
+  countryCode: string | null;
 };
 
 export type Activity = 'OUTDOOR_SIGHTSEEING';

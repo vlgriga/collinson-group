@@ -4,8 +4,11 @@ import type { Resolvers } from './generated/resolvers.js';
 export function createResolvers(ranking: RankingService): Resolvers {
   return {
     Query: {
-      activityRanking: async (_parent, { city }) => {
-        const { location, activities } = await ranking.rank({ city });
+      activityRanking: async (_parent, { city, countryCode }) => {
+        const { location, activities } = await ranking.rank({
+          city,
+          countryCode: countryCode ?? null,
+        });
         const { elevationM, ...place } = location;
         return { location: { ...place, elevation: elevationM }, activities };
       },

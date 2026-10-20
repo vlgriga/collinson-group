@@ -75,13 +75,15 @@ export type Location = {
 
 export type Query = {
   __typename?: 'Query';
-  /** How good each of the next 7 days is for each activity in a city or town. */
+  /** How good each of the coming days is for each activity in a city or town. */
   activityRanking: ActivityRanking;
 };
 
 
 export type QueryActivityRankingArgs = {
   city: Scalars['String']['input'];
+  countryCode?: InputMaybe<Scalars['String']['input']>;
+  days?: Scalars['Int']['input'];
 };
 
 /** A day's score in words: below 40 POOR, 40–59 FAIR, 60–79 GOOD, 80 and above EXCELLENT. */
@@ -227,7 +229,7 @@ export type LocationResolvers<ContextType = any, ParentType extends ResolversPar
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  activityRanking?: Resolver<ResolversTypes['ActivityRanking'], ParentType, ContextType, RequireFields<QueryActivityRankingArgs, 'city'>>;
+  activityRanking?: Resolver<ResolversTypes['ActivityRanking'], ParentType, ContextType, RequireFields<QueryActivityRankingArgs, 'city' | 'days'>>;
 };
 
 export type Resolvers<ContextType = any> = {

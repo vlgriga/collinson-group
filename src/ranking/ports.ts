@@ -24,9 +24,9 @@ export type Location = {
   timezone: string;
 };
 
-/** Turns the name a client sent into one place. */
+/** Turns the name a client sent, and the country it may be limited to, into one place. */
 export interface LocationResolver {
-  resolve(request: { city: string }): Promise<Location>;
+  resolve(request: { city: string; countryCode: string | null }): Promise<Location>;
 }
 
 /** Fetches a place's forecast now. */

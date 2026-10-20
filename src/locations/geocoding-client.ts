@@ -31,9 +31,14 @@ export type GeocodedPlace = Omit<Location, 'id'> & {
 
 /** Open-Meteo Geocoding: a name to the place it most likely means. */
 export class GeocodingClient {
-  async search(name: string): Promise<GeocodedPlace> {
+  /** The place `name` most likely means, in the country of `countryCode` when one is given. */
+  async search(name: string, countryCode: string | null): Promise<GeocodedPlace> {
     const url = new URL(SEARCH_URL);
-    url.search = new URLSearchParams({ name, count: CANDIDATES }).toString();
+    url.search = new URLSearchParams({
+      name,
+      count: CANDIDATES,
+      ...(countryCode === null ? {} : { countryCode }),
+    }).toString();
     const [top] = RESPONSE.parse(await getJson(url)).results;
     return {
       geocodingId: top.id,

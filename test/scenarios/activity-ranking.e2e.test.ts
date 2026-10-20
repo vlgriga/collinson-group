@@ -40,6 +40,26 @@ describe('activityRanking', () => {
     );
   });
 
+  it('limits the match to the country code given: Paris in US is Paris, Texas', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Paris', countryCode: 'US' });
+
+    // Then
+    expect(response.data?.activityRanking.location).toEqual({
+      name: 'Paris',
+      country: 'United States',
+      countryCode: 'US',
+      admin1: 'Texas',
+      latitude: 33.66094,
+      longitude: -95.55551,
+      elevation: 183,
+      timezone: 'America/Chicago',
+    });
+  });
+
   it('scores outdoor sightseeing for the 7 days from today, each with a rating and a reason', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });

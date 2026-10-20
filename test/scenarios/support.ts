@@ -1,8 +1,8 @@
 import type { TestApp } from '../app.js';
 
 export const ACTIVITY_RANKING = /* GraphQL */ `
-  query ActivityRanking($city: String!) {
-    activityRanking(city: $city) {
+  query ActivityRanking($city: String!, $countryCode: String, $days: Int) {
+    activityRanking(city: $city, countryCode: $countryCode, days: $days) {
       location {
         name
         country
@@ -56,7 +56,7 @@ export type ActivityRankingResponse = {
 /** Sends ACTIVITY_RANKING the way a client does, over HTTP to /graphql. */
 export async function requestActivityRanking(
   app: TestApp,
-  variables: { city: string },
+  variables: { city: string; countryCode?: string; days?: number },
 ): Promise<ActivityRankingResponse> {
   const response = await app.yoga.fetch('http://localhost/graphql', {
     method: 'POST',
