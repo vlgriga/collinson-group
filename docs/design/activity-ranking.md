@@ -68,7 +68,7 @@ sequenceDiagram
 
 | API | Endpoint | Key parameters |
 |---|---|---|
-| Geocoding | `geocoding-api.open-meteo.com/v1/search` | `name`, `count=1`, `countryCode` |
+| Geocoding | `geocoding-api.open-meteo.com/v1/search` | `name`, `count=10`, `countryCode` |
 | Forecast | `api.open-meteo.com/v1/forecast` | `daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,rain_sum,snowfall_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,weather_code,uv_index_max`, `hourly=snow_depth`, `start_date`, `end_date` (the week), `timezone=<the location's>` |
 | Marine | `marine-api.open-meteo.com/v1/marine` | `daily=wave_height_max,wave_period_max,wave_direction_dominant,swell_wave_height_max,swell_wave_period_max,wind_wave_height_max`, `start_date`, `end_date` (the week), `timezone=<the location's>` |
 
@@ -79,9 +79,8 @@ validated with zod. Units are converted at ingest (snow depth m → cm, duration
 snow depth is reduced to its daily maximum.
 
 A single value may be null in a response that is otherwise valid; it is stored as null. A scorer
-leaves a null factor out and rescales the other weights. A factor a hard cap depends on (snow
-depth, gusts, wave height, weather code, precipitation) is required: when it is null, the day
-scores 0 with a reason naming the missing value.
+leaves a null factor out and rescales the other weights. Every value a hard cap reads is required:
+when one is null, the day scores 0 with a reason naming the missing value.
 
 `has_marine` is set from the Marine response: true when any value is present, false when every
 value is null (the place has no sea), and left as it was when the call fails. Marine is not called
@@ -157,8 +156,8 @@ enum Rating { POOR FAIR GOOD EXCELLENT }
 [Refresh](refresh.md) adds `stale: Boolean!` to `ActivityRanking`.
 
 `days` is non-null with a default, so omitting it means 7. A query the schema itself refuses — a
-missing `city`, a `null` or a wrong type — keeps Yoga's `GRAPHQL_VALIDATION_FAILED`: it is a
-malformed query, not an invalid value.
+missing `city`, a `null` `days` or a wrong type, inline or through variables — gets GraphQL's own
+error, not `BAD_USER_INPUT`: it is a malformed query, not an invalid value.
 
 Errors: `ValidationError` → `BAD_USER_INPUT`, `LocationNotFoundError` → `LOCATION_NOT_FOUND`,
 `UpstreamUnavailableError` → `UPSTREAM_UNAVAILABLE`. Until [Resilience](resilience.md) serves
@@ -176,7 +175,7 @@ come from the 2–3 most influential factors, in English, in metric units. Ratin
 | Skiing | snow depth (0.4), fresh snowfall (0.2), temperature (0.15), wind/gusts (0.15), sunshine (0.1) | gusts > 60 km/h; no snow on the ground | never (scores low) |
 | Surfing | wave height (0.35), swell period (0.3), wind speed (0.25), air temperature (0.1) | waves > 4 m; thunderstorm | `has_marine = false`, reason "No marine forecast here" |
 | Outdoor sightseeing | precipitation (0.35), apparent temperature (0.25), sunshine fraction (0.2), wind (0.1), UV (0.1) | thunderstorm; heavy rain or snow | never |
-| Indoor sightseeing | `50 + (100 − outdoor score) / 2`, from the day's rounded outdoor score: 50 on a perfect outdoor day, 100 on the worst. Its reasons are the outdoor day's reasons, prefixed "Outside: " | none | never |
+| Indoor sightseeing | `50 + (100 − outdoor score) / 2`, from the day's rounded outdoor score: 50 on a perfect outdoor day, 100 on the worst; 50 when outdoor scored 0 for a missing value. Its reasons are the outdoor day's reasons, prefixed "Outside: " | none | never |
 
 - **Rounding:** every score is rounded half up to an integer where it is computed — a day's score
   once its caps apply, the weekly score once averaged. What is compared afterwards is the integer

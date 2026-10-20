@@ -91,8 +91,8 @@ describe('RankingService rank', () => {
   it('serves the stored forecast without calling Open-Meteo while it covers the week', async () => {
     // Given
     const app = createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
-    const chamonix = await storeLocation(app.db, buildLocation(CHAMONIX));
-    await storeForecast(app.db, buildForecast({ location: chamonix, fetchedAt: '2026-10-18T08:00:00Z' }));
+    const chamonix = await storeLocation(app.db, buildLocation({ ...CHAMONIX, hasMarine: false }));
+    await storeForecast(app.db, buildForecast({ location: chamonix, firstDate: '2026-10-18', fetchedAt: '2026-10-18T08:00:00Z' }));
 
     // When
     const ranking = await app.ranking.rank({ city: 'Chamonix' });

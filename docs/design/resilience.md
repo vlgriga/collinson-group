@@ -20,8 +20,9 @@ R8 for "data temporarily missing", R12, N2. R13 is met by [activity ranking](act
 - **Upstream calls.** A 5 s timeout, 3 retries with exponential backoff and jitter on 5xx, 429 and
   network errors; no retry on 4xx. Every attempt is recorded in `forecast_fetches`.
 - **Partial failure.** If Marine fails and Forecast succeeds, surfing is unavailable with "marine
-  data temporarily unavailable", distinct from "No marine forecast here". `has_marine` is set
-  only on a confirmed empty response.
+  data temporarily unavailable", distinct from "No marine forecast here". A marine failure leaves
+  `has_marine` as it was ([activity ranking](activity-ranking.md#open-meteo-calls) sets it from a
+  response).
 - **Upstream down.** Stored data is served with `stale: true`; `UPSTREAM_UNAVAILABLE` only when
   nothing is stored.
 - **Worker.** pg-boss retries a failed job; one that keeps failing is logged and tried again on the
@@ -42,4 +43,5 @@ None recorded yet; settled in planning.
 
 | Risk | Impact | Mitigation |
 |---|---|---|
+| Marine fails while Forecast succeeds | `forecastFetchedAt` is newer than the marine rows surfing is scored from | To be settled in planning: report the marine fetch time too, or mark surfing |
 | Open-Meteo free-tier limits and non-commercial terms | Throttling, or a licensing issue in production | De-duplication, the active-window refresh, backoff on 429; a commercial plan for production |

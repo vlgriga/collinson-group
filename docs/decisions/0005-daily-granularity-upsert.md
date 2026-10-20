@@ -1,5 +1,5 @@
 # 0005. Daily granularity, upserted forecasts + raw payload log
-- Status: Accepted; the `timezone=auto` clause superseded by [0009](0009-forecast-week-in-the-location-timezone.md)
+- Status: Accepted
 - Date: 2026-10-18
 
 ## Context
