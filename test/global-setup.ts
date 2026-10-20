@@ -1,10 +1,14 @@
+import { execFile } from 'node:child_process';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
+
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
 import type { TestProject } from 'vitest/node';
 
 import { TEMPLATE_DATABASE, withDatabase } from './database.js';
+
+const run = promisify(execFile);
 
 // The same major version as production (docs/testing.md#principles).
 const POSTGRES_IMAGE = 'postgres:17-alpine';
@@ -22,23 +26,12 @@ export async function setup(root: TestProject): Promise<(() => Promise<void>) | 
   }
   const container = await new PostgreSqlContainer(POSTGRES_IMAGE).start();
   const serverUrl = container.getConnectionUri();
-
-  const server = new pg.Client({ connectionString: serverUrl });
-  await server.connect();
   try {
-    await server.query(`CREATE DATABASE ${TEMPLATE_DATABASE}`);
-  } finally {
-    await server.end();
-  }
-
-  // The client is closed before any worker copies the template: Postgres refuses to copy a
-  // database somebody is connected to.
-  const template = new pg.Client({ connectionString: withDatabase(serverUrl, TEMPLATE_DATABASE) });
-  await template.connect();
-  try {
-    await migrate(drizzle({ client: template }), { migrationsFolder: 'src/db/migrations' });
-  } finally {
-    await template.end();
+    await createTemplate(serverUrl, root.config.root);
+  } catch (error) {
+    // Vitest gets no teardown from a setup that throws.
+    await container.stop();
+    throw error;
   }
 
   // Given to those levels alone: what the root provides, every project sees, unit included.
@@ -48,4 +41,23 @@ export async function setup(root: TestProject): Promise<(() => Promise<void>) | 
   return async () => {
     await container.stop();
   };
+}
+
+/**
+ * Migrated by `drizzle-kit migrate`, the command production runs, so the tests also prove the
+ * migrations apply. It has exited before any worker copies the template, which Postgres refuses
+ * while somebody is connected to it.
+ */
+async function createTemplate(serverUrl: string, projectRoot: string): Promise<void> {
+  const server = new pg.Client({ connectionString: serverUrl });
+  await server.connect();
+  try {
+    await server.query(`CREATE DATABASE ${TEMPLATE_DATABASE}`);
+  } finally {
+    await server.end();
+  }
+  await run(join(projectRoot, 'node_modules/.bin/drizzle-kit'), ['migrate'], {
+    cwd: projectRoot,
+    env: { ...process.env, DATABASE_URL: withDatabase(serverUrl, TEMPLATE_DATABASE) },
+  });
 }
