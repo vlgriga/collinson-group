@@ -168,6 +168,23 @@ describe('scoreOutdoorSightseeing', () => {
     expect(scored).toEqual({ score: 0, reasons: [reason] });
   });
 
+  it.each([
+    { field: 'apparentTemperatureMaxC', score: 73 },
+    { field: 'sunshineDurationH', score: 75 },
+    { field: 'daylightDurationH', score: 75 },
+    { field: 'windSpeedMaxKmh', score: 89 },
+    { field: 'uvIndexMax', score: 89 },
+  ] as const)('leaves out a missing $field and rescales the other weights', ({ field, score }) => {
+    // Given a day of 80 with every factor: a gale and extreme UV cost 10 points each
+    const day = buildDay({ ...IDEAL, windSpeedMaxKmh: 50, uvIndexMax: 11, [field]: null });
+
+    // When
+    const scored = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(scored.score).toBe(score);
+  });
+
   it('gives as reasons the three factors that cost the most points, the costliest first', () => {
     // Given
     const day = buildDay({
