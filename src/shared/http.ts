@@ -22,8 +22,6 @@ export async function getJson<Schema extends z.ZodType>(
     throw new UpstreamUnavailableError(`${upstream} could not be reached`, { cause: error });
   });
   if (!response.ok) {
-    // Read or cancelled, a body frees its connection.
-    await response.body?.cancel();
     throw new UpstreamUnavailableError(`${upstream} answered ${String(response.status)}`);
   }
   const payload: unknown = await response.json().catch((error: unknown) => {
