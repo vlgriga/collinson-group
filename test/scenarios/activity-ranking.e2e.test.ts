@@ -132,6 +132,7 @@ describe('activityRanking', () => {
       'LOCATION_NOT_FOUND',
     ]);
     expect(await readLocations(app.db)).toEqual([]);
+    expect(await readLocationAliases(app.db)).toEqual([]);
   });
 
   it('names an unknown city as the client wrote it', async () => {
