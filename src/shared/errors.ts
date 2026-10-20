@@ -9,3 +9,8 @@ export class ValidationError extends Error {
 export class LocationNotFoundError extends Error {
   override readonly name = 'LocationNotFoundError';
 }
+
+/** Open-Meteo could not be reached, answered with an error, or answered with what it should not. */
+export class UpstreamUnavailableError extends Error {
+  override readonly name = 'UpstreamUnavailableError';
+}

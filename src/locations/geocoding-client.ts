@@ -42,7 +42,7 @@ export class GeocodingClient {
       count: CANDIDATES,
       ...(countryCode === null ? {} : { countryCode }),
     }).toString();
-    const top = RESPONSE.parse(await getJson(url)).results?.[0];
+    const top = (await getJson(url, RESPONSE)).data.results?.[0];
     if (top === undefined) {
       throw new LocationNotFoundError(
         countryCode === null

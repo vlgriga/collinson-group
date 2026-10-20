@@ -1,12 +1,17 @@
 import type { GraphQLError } from 'graphql';
 import { createGraphQLError, maskError } from 'graphql-yoga';
 
-import { LocationNotFoundError, ValidationError } from '../shared/index.js';
+import {
+  LocationNotFoundError,
+  UpstreamUnavailableError,
+  ValidationError,
+} from '../shared/index.js';
 
 /** The response code of each domain error (docs/architecture/error-handling.md). */
 const CODES = [
   [ValidationError, 'BAD_USER_INPUT'],
   [LocationNotFoundError, 'LOCATION_NOT_FOUND'],
+  [UpstreamUnavailableError, 'UPSTREAM_UNAVAILABLE'],
 ] as const;
 
 /**

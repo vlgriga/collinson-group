@@ -201,6 +201,24 @@ describe('activityRanking', () => {
     ]);
   });
 
+  it.each(UPSTREAM_FAILURES)(
+    'answers UPSTREAM_UNAVAILABLE when $api fails with $failing, asking it only once',
+    async ({ api, failure }) => {
+      // Given
+      const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+      app.openMeteo.fail(api, failure);
+
+      // When
+      const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+      // Then
+      expect(response.errors?.map(({ extensions }) => extensions?.code)).toEqual([
+        'UPSTREAM_UNAVAILABLE',
+      ]);
+      expect(app.openMeteo.requestsTo(api)).toHaveLength(1);
+    },
+  );
+
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
@@ -287,6 +305,23 @@ const INVALID_INPUTS = [
   { input: 'a one-letter country code', variables: { city: 'Paris', countryCode: 'U' } },
   { input: '0 days', variables: { city: 'Paris', days: 0 } },
   { input: '8 days', variables: { city: 'Paris', days: 8 } },
+] as const;
+
+const UPSTREAM_FAILURES = [
+  { api: 'geocoding', failing: 'an error status', failure: { status: 500 } },
+  { api: 'geocoding', failing: 'a broken connection', failure: 'broken connection' },
+  {
+    api: 'geocoding',
+    failing: 'a response that fails validation',
+    failure: { body: { results: [{ name: 'Chamonix' }] } },
+  },
+  { api: 'forecast', failing: 'an error status', failure: { status: 500 } },
+  { api: 'forecast', failing: 'a broken connection', failure: 'broken connection' },
+  {
+    api: 'forecast',
+    failing: 'a response that fails validation',
+    failure: { body: { daily: { time: ['2026-10-18'] } } },
+  },
 ] as const;
 
 const A_SCORE: unknown = expect.toSatisfy(
