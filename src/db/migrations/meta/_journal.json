@@ -8,6 +8,13 @@
       "when": 1792524035848,
       "tag": "0000_activity_ranking",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792526699259,
+      "tag": "0001_location_aliases",
+      "breakpoints": true
     }
   ]
 }

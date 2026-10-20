@@ -33,6 +33,26 @@ export const locations = pgTable('locations', {
   ...timestamps,
 });
 
+/** Each name a request gave, and the place it resolved to: the geocoding cache. */
+export const locationAliases = pgTable(
+  'location_aliases',
+  {
+    /** Trimmed, its spaces collapsed, lower-cased: the name as it was geocoded. */
+    normalizedQuery: text('normalized_query').notNull(),
+    /** '' when the search was not limited to a country, so that the key has no nulls. */
+    countryCode: text('country_code').notNull(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.normalizedQuery, table.countryCode] }),
+    // The names of a place, for the cascade when it is deleted.
+    index('location_aliases_location_id_idx').on(table.locationId),
+  ],
+);
+
 /** One row per place and date of its calendar, overwritten by each fetch (ADR 0005). */
 export const dailyWeather = pgTable(
   'daily_weather',

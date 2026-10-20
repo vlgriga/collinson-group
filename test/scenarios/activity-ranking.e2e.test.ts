@@ -147,6 +147,19 @@ describe('activityRanking', () => {
     ]);
   });
 
+  it('answers a name asked for before, in another case and spacing, without geocoding it again', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+    await requestActivityRanking(app, { city: 'Chamonix Mont Blanc' });
+
+    // When
+    const response = await requestActivityRanking(app, { city: '  chamonix   MONT blanc ' });
+
+    // Then
+    expect(response.data?.activityRanking.location.name).toBe('Chamonix');
+    expect(app.openMeteo.requestsTo('geocoding')).toHaveLength(1);
+  });
+
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
