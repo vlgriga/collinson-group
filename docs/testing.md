@@ -255,8 +255,9 @@ way the code uses the real service, rather than scripting it for the occasion. T
 per third-party dependency, shared by all tests, in `test/fakes/`:
 
 - `open-meteo.ts` — msw handlers backed by the recorded fixtures. It answers geocoding, forecast and
-  marine requests for the places it knows, returns an empty result for the ones it doesn't,
-  records the requests it received, and takes the failure controls above. msw runs with
+  marine requests for the places it knows, returns an empty geocoding result for a name it doesn't,
+  fails the test on a forecast it has no recording for, records the requests it received, and
+  takes the failure controls above. msw runs with
   `onUnhandledFrame: 'error'`, so no test reaches the real API.
 - `clock.ts` — `fixedClock(instant)`, which a test can advance.
 
