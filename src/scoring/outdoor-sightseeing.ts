@@ -40,7 +40,8 @@ export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
     score(
       factors.apparentTemperature,
       day.apparentTemperatureMaxC,
-      (celsius) => `Feels like ${celsius.toFixed(0)} °C`,
+      // Just below freezing rounds to -0, which toFixed would print with its sign.
+      (celsius) => `Feels like ${String(Math.round(celsius) || 0)} °C`,
     ),
     score(
       factors.sunshine,

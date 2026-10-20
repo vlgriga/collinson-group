@@ -197,6 +197,17 @@ describe('scoreOutdoorSightseeing', () => {
     expect(reasons).toEqual(['Feels like 0 °C', 'Sunshine 0% of daylight', 'Wind up to 35 km/h']);
   });
 
+  it('gives a feel just below freezing as 0 °C, without a sign', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, apparentTemperatureMaxC: -0.3 });
+
+    // When
+    const { reasons } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(reasons).toContain('Feels like 0 °C');
+  });
+
   it('gives as reasons the three weightiest factors when none costs a point', () => {
     // Given
     const day = buildDay(IDEAL);
