@@ -1,4 +1,5 @@
 import type { Location, LocationResolver } from '../ranking/index.js';
+import { LocationNotFoundError } from '../shared/index.js';
 import type { GeocodingClient } from './geocoding-client.js';
 import type { LocationRepository } from './location-repository.js';
 
@@ -29,7 +30,15 @@ export class LocationService implements LocationResolver {
     if (known !== undefined) {
       return known;
     }
-    return this.#repository.save(await this.#geocoding.search(alias.name, countryCode), alias);
+    const place = await this.#geocoding.search(alias.name, countryCode);
+    if (place === undefined) {
+      throw new LocationNotFoundError(
+        countryCode === null
+          ? `No place named ${city}`
+          : `No place named ${city} in ${countryCode}`,
+      );
+    }
+    return this.#repository.save(place, alias);
   }
 }
 

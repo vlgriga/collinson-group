@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import type { Location } from '../ranking/index.js';
-import { getJson, LocationNotFoundError } from '../shared/index.js';
+import { getJson } from '../shared/index.js';
 
 const SEARCH_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 
@@ -34,8 +34,11 @@ export type GeocodedPlace = Omit<Location, 'id'> & {
 
 /** Open-Meteo Geocoding: a name to the place it most likely means. */
 export class GeocodingClient {
-  /** The place `name` most likely means, in the country of `countryCode` when one is given. */
-  async search(name: string, countryCode: string | null): Promise<GeocodedPlace> {
+  /**
+   * The place `name` most likely means, in the country of `countryCode` when one is given;
+   * undefined when the geocoder knows none.
+   */
+  async search(name: string, countryCode: string | null): Promise<GeocodedPlace | undefined> {
     const url = new URL(SEARCH_URL);
     url.search = new URLSearchParams({
       name,
@@ -44,11 +47,7 @@ export class GeocodingClient {
     }).toString();
     const top = (await getJson(url, RESPONSE)).data.results?.[0];
     if (top === undefined) {
-      throw new LocationNotFoundError(
-        countryCode === null
-          ? `No place named ${name}`
-          : `No place named ${name} in ${countryCode}`,
-      );
+      return undefined;
     }
     return {
       geocodingId: top.id,

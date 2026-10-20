@@ -134,6 +134,17 @@ describe('activityRanking', () => {
     expect(await readLocations(app.db)).toEqual([]);
   });
 
+  it('names an unknown city as the client wrote it', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Nowhereville' });
+
+    // Then
+    expect(response.errors?.[0]?.message).toContain('Nowhereville');
+  });
+
   it('answers LOCATION_NOT_FOUND for a city known only outside the country given', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
