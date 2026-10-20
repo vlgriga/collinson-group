@@ -147,11 +147,7 @@ describe('scoreOutdoorSightseeing', () => {
     const { reasons } = scoreOutdoorSightseeing(day);
 
     // Then
-    expect(reasons).toEqual([
-      'Heavy rain or snow',
-      '12.0 mm of precipitation',
-      'Feels like 20 °C',
-    ]);
+    expect(reasons).toEqual(['Heavy rain or snow', '12.0 mm of precipitation', 'Feels like 20 °C']);
   });
 
   it.each([
