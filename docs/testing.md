@@ -88,17 +88,17 @@ checks the result and what is stored afterwards:
 
 ```ts
 describe('RankingService rank', () => {
-  it('serves the stored forecast without calling Open-Meteo when it is fresh', async () => {
+  it('serves the stored forecast without calling Open-Meteo while it covers the week', async () => {
     // Given
     const app = createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
-    const chamonix = await storeLocation(app.db, buildLocation(CHAMONIX));
-    await storeForecast(app.db, buildForecast({ location: chamonix, fetchedAt: '2026-10-18T08:00:00Z' }));
+    const chamonix = await storeLocation(app.db, buildLocation({ ...CHAMONIX, hasMarine: false }));
+    await storeForecast(app.db, buildForecast({ location: chamonix, firstDate: '2026-10-18', fetchedAt: '2026-10-18T08:00:00Z' }));
 
     // When
     const ranking = await app.ranking.rank({ city: 'Chamonix' });
 
     // Then
-    expect(ranking.stale).toBe(false);
+    expect(ranking.forecastFetchedAt).toEqual(new Date('2026-10-18T08:00:00Z'));
     expect(app.openMeteo.requests).toHaveLength(0);
   });
 });
@@ -136,8 +136,8 @@ There are three kinds of helper, named by what they touch:
 - Real Open-Meteo responses are recorded once into `test/fixtures/open-meteo/`
   (`forecast-chamonix.json`, `marine-biarritz.json`, `marine-inland-null.json`,
   `geocoding-paris.json`, …). `scripts/record-fixtures.ts` refreshes them, and they are committed.
-- The [Open-Meteo fake](#isolating-dependencies) serves them, rebasing their dates to the test
-  clock's "today" in the location's timezone.
+- The [Open-Meteo fake](#isolating-dependencies) serves them, rebasing their dates to the
+  `start_date`–`end_date` it is asked for ([ADR 0009](decisions/0009-forecast-week-in-the-location-timezone.md)).
 - Scorer tests build their inputs with `build…` helpers, not from JSON.
 
 ## Literals

@@ -81,6 +81,9 @@ From the [brief](../TASK.md):
 - A city is one point, the geocoder's coordinates. No nearby resort or beach is searched for.
 - Open-Meteo's free, non-commercial terms are acceptable for this exercise.
 - Scoring is a heuristic, not a validated model; its thresholds are configuration.
+- The weekly score is the plain mean of the requested days; near days do not weigh more.
+- Indoor sightseeing is best when outdoor conditions are bad, and still fair when they are good.
+- Reasons are in English, in metric units, until [open question 7](#open-questions) is answered.
 
 ## Out of scope
 
@@ -103,9 +106,10 @@ for the nearest resort or beach, historical analytics, a front end.
 1. Who consumes the API — a web or mobile app, an internal service? It decides whether a location
    search step, pagination or subscriptions are worth adding.
 2. Should near days weigh more in the weekly score, since a forecast grows less certain with lead
-   time?
+   time? *Answered: no, see [Assumptions](#assumptions).*
 3. What does "indoor sightseeing" mean to the business: independent of the weather, or best when
-   outdoor conditions are bad (the current reading)?
+   outdoor conditions are bad? *Answered: best when outdoor conditions are bad, see
+   [Assumptions](#assumptions).*
 4. Should skiing and surfing look beyond the city point, to the nearest resort or beach within some
    distance?
 5. How much traffic, and how many distinct places, are expected? It drives the freshness window,

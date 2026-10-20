@@ -33,7 +33,7 @@ docker compose up --build
 query {
   activityRanking(city: "Chamonix") {
     location { name country latitude longitude }
-    stale
+    forecastFetchedAt
     activities {
       activity
       score
