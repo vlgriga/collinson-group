@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import type { Location } from '../ranking/index.js';
-import { getJson } from '../shared/index.js';
+import { getJson, LocationNotFoundError } from '../shared/index.js';
 
 const SEARCH_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 
@@ -20,8 +20,11 @@ const PLACE = z.object({
   timezone: z.string(),
 });
 
-// Only the match taken is checked: a lower-ranked one may lack a country, and is no reason to fail.
-const RESPONSE = z.object({ results: z.tuple([PLACE]).rest(z.unknown()) });
+const RESPONSE = z.object({
+  // Absent when nothing matches. Only the match taken is checked: a lower-ranked one may lack a
+  // country, and is no reason to fail.
+  results: z.tuple([PLACE]).rest(z.unknown()).optional(),
+});
 
 /** A place as the geocoder knows it, before it is stored. */
 export type GeocodedPlace = Omit<Location, 'id'> & {
@@ -39,7 +42,14 @@ export class GeocodingClient {
       count: CANDIDATES,
       ...(countryCode === null ? {} : { countryCode }),
     }).toString();
-    const [top] = RESPONSE.parse(await getJson(url)).results;
+    const top = RESPONSE.parse(await getJson(url)).results?.[0];
+    if (top === undefined) {
+      throw new LocationNotFoundError(
+        countryCode === null
+          ? `No place named ${name}`
+          : `No place named ${name} in ${countryCode}`,
+      );
+    }
     return {
       geocodingId: top.id,
       name: top.name,

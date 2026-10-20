@@ -1,10 +1,13 @@
 import type { GraphQLError } from 'graphql';
 import { createGraphQLError, maskError } from 'graphql-yoga';
 
-import { ValidationError } from '../shared/index.js';
+import { LocationNotFoundError, ValidationError } from '../shared/index.js';
 
 /** The response code of each domain error (docs/architecture/error-handling.md). */
-const CODES = [[ValidationError, 'BAD_USER_INPUT']] as const;
+const CODES = [
+  [ValidationError, 'BAD_USER_INPUT'],
+  [LocationNotFoundError, 'LOCATION_NOT_FOUND'],
+] as const;
 
 /**
  * Where an error becomes a response: a domain error keeps its message and gets its code; anything

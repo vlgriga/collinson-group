@@ -4,3 +4,8 @@
 export class ValidationError extends Error {
   override readonly name = 'ValidationError';
 }
+
+/** A name the geocoder knows no place by, in the country asked for if one was. */
+export class LocationNotFoundError extends Error {
+  override readonly name = 'LocationNotFoundError';
+}
