@@ -1,5 +1,4 @@
-import type { GraphQLError } from 'graphql';
-import { createGraphQLError, maskError } from 'graphql-yoga';
+import { createGraphQLError } from 'graphql-yoga';
 
 import {
   LocationNotFoundError,
@@ -15,32 +14,17 @@ const CODES = [
 ] as const;
 
 /**
- * Where an error becomes a response: a domain error keeps its message and gets its code; anything
- * else is masked by Yoga as INTERNAL_SERVER_ERROR, its details kept from the client.
+ * Where an error becomes a response. A domain error becomes a GraphQL error with its message and
+ * code, which Yoga passes on as it is. Anything else is left to Yoga, which logs it and masks it as
+ * INTERNAL_SERVER_ERROR. Mapped in Yoga's error mask instead, every domain error would be logged at
+ * error level, client faults included.
  */
-export function maskDomainError(error: unknown, message: string, isDev?: boolean): Error {
-  // A resolver's error arrives wrapped, with where in the query it was thrown.
-  if (isGraphQLError(error) && error.cause instanceof Error) {
-    const { cause } = error;
-    const code = CODES.find(([type]) => cause instanceof type)?.[1];
-    if (code !== undefined) {
-      return createGraphQLError(cause.message, {
-        nodes: error.nodes ?? null,
-        source: error.source,
-        positions: error.positions,
-        path: error.path,
-        originalError: cause,
-        extensions: { code },
-      });
-    }
+export function toResponseError(error: unknown): unknown {
+  const code = CODES.find(([type]) => error instanceof type)?.[1];
+  if (code === undefined || !(error instanceof Error)) {
+    return error;
   }
-  return maskError(error, message, isDev);
-}
-
-/**
- * By its name, as Yoga tells one: `instanceof` fails when graphql is loaded twice, as under Vitest,
- * which resolves it for this module with the `development` condition and for Yoga without.
- */
-function isGraphQLError(error: unknown): error is GraphQLError {
-  return error instanceof Error && error.name === 'GraphQLError';
+  // Without the domain error as its originalError: Yoga masks an error whose chain does not end in
+  // a GraphQL error.
+  return createGraphQLError(error.message, { extensions: { code } });
 }
