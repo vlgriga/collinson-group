@@ -88,7 +88,7 @@ checks the result and what is stored afterwards:
 
 ```ts
 describe('RankingService rank', () => {
-  it('serves the stored forecast without calling Open-Meteo when it is fresh', async () => {
+  it('serves the stored forecast without calling Open-Meteo while it covers the week', async () => {
     // Given
     const app = createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
     const chamonix = await storeLocation(app.db, buildLocation(CHAMONIX));
@@ -98,7 +98,7 @@ describe('RankingService rank', () => {
     const ranking = await app.ranking.rank({ city: 'Chamonix' });
 
     // Then
-    expect(ranking.stale).toBe(false);
+    expect(ranking.forecastFetchedAt).toEqual(new Date('2026-10-18T08:00:00Z'));
     expect(app.openMeteo.requests).toHaveLength(0);
   });
 });

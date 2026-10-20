@@ -51,13 +51,15 @@ sequenceDiagram
 2. **Resolve the place.** Normalise the name (trim, collapse whitespace, lower-case) and look up
    `location_aliases` by (name, country code). On a miss, call Open-Meteo Geocoding, take the
    **top match** ([ADR 0003](../decisions/0003-single-query-geocoding.md)), and upsert the location
-   (on `geocoding_id`, since two names can resolve to one place) and the alias. No match:
+   (on `geocoding_id`, doing nothing on a conflict, so two names for one place share it and its
+   `has_marine`) and the alias. No match:
    `LocationNotFoundError`.
 3. **Load the forecast.** "Today" is the `Clock`'s instant in the place's timezone; the week is the
    7 dates from today. The stored data **covers the week** when each of its dates has a
    `daily_weather` row and, unless `has_marine` is false, a `daily_marine` row. The week is checked
    whatever `days` asks for, so the data used is never more than a day old. If it is not covered,
-   the forecast for exactly that week is fetched inline, upserted, and read again; a response that
+   the forecast for exactly that week is fetched inline (Forecast and Marine in parallel), upserted,
+   and read again; a response that
    does not hold exactly those dates is invalid. How this rule meets the freshness window is
    settled in [Refresh](refresh.md).
 4. **Score** the requested days for every activity, aggregate, order, and answer.
@@ -66,7 +68,7 @@ sequenceDiagram
 
 | API | Endpoint | Key parameters |
 |---|---|---|
-| Geocoding | `geocoding-api.open-meteo.com/v1/search` | `name`, `count=10`, `countryCode` |
+| Geocoding | `geocoding-api.open-meteo.com/v1/search` | `name`, `count=1`, `countryCode` |
 | Forecast | `api.open-meteo.com/v1/forecast` | `daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,rain_sum,snowfall_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,weather_code,uv_index_max`, `hourly=snow_depth`, `start_date`, `end_date` (the week), `timezone=<the location's>` |
 | Marine | `marine-api.open-meteo.com/v1/marine` | `daily=wave_height_max,wave_period_max,wave_direction_dominant,swell_wave_height_max,swell_wave_period_max,wind_wave_height_max`, `start_date`, `end_date` (the week), `timezone=<the location's>` |
 
@@ -77,8 +79,9 @@ validated with zod. Units are converted at ingest (snow depth m → cm, duration
 snow depth is reduced to its daily maximum.
 
 A single value may be null in a response that is otherwise valid; it is stored as null. A scorer
-leaves a null factor out and rescales the other weights, and a hard cap whose value is null does
-not apply.
+leaves a null factor out and rescales the other weights. A factor a hard cap depends on (snow
+depth, gusts, wave height, weather code, precipitation) is required: when it is null, the day
+scores 0 with a reason naming the missing value.
 
 `has_marine` is set from the Marine response: true when any value is present, false when every
 value is null (the place has no sea), and left as it was when the call fails. Marine is not called
@@ -153,7 +156,9 @@ enum Rating { POOR FAIR GOOD EXCELLENT }
 
 [Refresh](refresh.md) adds `stale: Boolean!` to `ActivityRanking`.
 
-`days` is non-null with a default, so omitting it means 7 and `null` is refused by GraphQL.
+`days` is non-null with a default, so omitting it means 7. A query the schema itself refuses — a
+missing `city`, a `null` or a wrong type — keeps Yoga's `GRAPHQL_VALIDATION_FAILED`: it is a
+malformed query, not an invalid value.
 
 Errors: `ValidationError` → `BAD_USER_INPUT`, `LocationNotFoundError` → `LOCATION_NOT_FOUND`,
 `UpstreamUnavailableError` → `UPSTREAM_UNAVAILABLE`. Until [Resilience](resilience.md) serves
@@ -203,11 +208,12 @@ come from the 2–3 most influential factors, in English, in metric units. Ratin
   timezone; the input schema.
 - **Integration:** ingest and the repositories against real Postgres with the Open-Meteo fake: rows
   stored per fetch, an upsert overwriting overlapping days, `has_marine` set true and false and left
-  unchanged on a failure; an Open-Meteo failure becoming `UpstreamUnavailableError`; the alias
-  cache.
+  unchanged on a failure; an Open-Meteo failure, and a response without exactly the asked dates,
+  becoming `UpstreamUnavailableError`; the alias cache; a second name for a stored place.
 - **End to end**, through `yoga.fetch`: a cold miss, a second request answered from stored data
   with no Open-Meteo call, a stored week that has run out (also for `days: 1`), `countryCode`,
-  `days`, an inland city, an unknown city, invalid input, Open-Meteo failing on a cold miss.
+  `days`, an inland city, an inland city whose week has run out (no Marine call), an unknown city,
+  invalid input, Open-Meteo failing on a cold miss.
 
 ## Risks and open questions
 

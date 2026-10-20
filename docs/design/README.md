@@ -10,7 +10,7 @@ the feature once it is built.
 
 | Feature | Requirements | Design issue |
 |---|---|---|
-| [Activity ranking](activity-ranking.md) | R1–R7, R8 in part, R9, R10 in part, R13, N1, N7 | [#10](https://github.com/vlgriga/collinson-group/issues/10) |
-| [Refresh](refresh.md) | R9, R10 in part, R11, N2 | [#11](https://github.com/vlgriga/collinson-group/issues/11) |
+| [Activity ranking](activity-ranking.md) | R1–R7, R8 in part, R9 in part, R10 in part, R13, N1, N7 | [#10](https://github.com/vlgriga/collinson-group/issues/10) |
+| [Refresh](refresh.md) | R9 in part, R10 in part, R11, N2 | [#11](https://github.com/vlgriga/collinson-group/issues/11) |
 | [Resilience](resilience.md) | R8 in part, R12, N2 | [#12](https://github.com/vlgriga/collinson-group/issues/12) |
 | [Operations](operations.md) | N3–N5 | [#13](https://github.com/vlgriga/collinson-group/issues/13) |

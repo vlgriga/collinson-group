@@ -7,8 +7,7 @@
 
 Open-Meteo is a free service outside our control. An outage on its side should not be an outage on
 ours while stored data exists, and every failure the client sees should be named. Requirements:
-R8 for "data temporarily missing", R12, N2. R13 is met by [activity ranking](activity-ranking.md); here
-it narrows to "nothing stored".
+R8 for "data temporarily missing", R12, N2. R13 is met by [activity ranking](activity-ranking.md).
 
 ## Goals and non-goals
 

@@ -7,7 +7,7 @@
 
 Stored forecasts go out of date. Requests should stay fast, the answer should say when its data is
 old, and the places people ask about should be refreshed without a call to Open-Meteo per request.
-Requirements: R9–R11, N2.
+Requirements: R9 for the freshness window, R10 for `stale`, R11, N2.
 
 ## Goals and non-goals
 
