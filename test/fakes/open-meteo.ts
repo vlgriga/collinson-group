@@ -20,17 +20,19 @@ export type OpenMeteoFailure =
   /** A 200 whose body is whatever the test gives, such as one the client must refuse. */
   | { body: JsonBodyType };
 
-/** The searches the fake knows, as Open-Meteo is asked them, and the files they are answered from. */
-const SEARCHES: readonly { name: string; countryCode?: string; file: string }[] = [
-  { name: 'chamonix', file: 'chamonix' },
-  { name: 'chamonix mont blanc', file: 'chamonix-mont-blanc' },
-  { name: 'victoria', file: 'victoria' },
-  { name: 'paris', file: 'paris' },
-  { name: 'paris', countryCode: 'US', file: 'paris-us' },
-];
-
-/** The searches whose top match has a recorded forecast; another search may find the same place. */
-const FORECASTS = ['chamonix', 'victoria', 'paris', 'paris-us'] as const;
+/**
+ * The searches the fake knows, as Open-Meteo is asked them, and the files they are answered from,
+ * as scripts/record-fixtures.ts records them. A search with `forecast: false` finds a place another
+ * search has the forecast of.
+ */
+const SEARCHES: readonly { name: string; countryCode?: string; file: string; forecast?: false }[] =
+  [
+    { name: 'chamonix', file: 'chamonix' },
+    { name: 'chamonix mont blanc', file: 'chamonix-mont-blanc', forecast: false },
+    { name: 'victoria', file: 'victoria' },
+    { name: 'paris', file: 'paris' },
+    { name: 'paris', countryCode: 'US', file: 'paris-us' },
+  ];
 
 const GEOCODING = z.looseObject({
   results: z
@@ -42,6 +44,8 @@ const FORECAST = z.looseObject({ daily: z.record(z.string(), z.array(z.unknown()
 type Search = {
   name: string;
   countryCode: string | undefined;
+  file: string;
+  forecast: boolean;
   geocoding: z.infer<typeof GEOCODING>;
 };
 
@@ -61,17 +65,21 @@ export class OpenMeteoFake {
 
   readonly #failures = new Map<OpenMeteoApi, OpenMeteoFailure>();
 
-  readonly #searches: Search[] = SEARCHES.map(({ name, countryCode, file }) => ({
+  readonly #searches: Search[] = SEARCHES.map(({ name, countryCode, file, forecast }) => ({
     name,
     countryCode,
+    file,
+    forecast: forecast !== false,
     geocoding: GEOCODING.parse(readFixture(`geocoding-${file}.json`)),
   }));
 
-  readonly #forecasts: Forecast[] = FORECASTS.map((file) => {
-    const [top] = GEOCODING.parse(readFixture(`geocoding-${file}.json`)).results;
-    const forecast = FORECAST.parse(readFixture(`forecast-${file}.json`));
-    return { latitude: top.latitude, longitude: top.longitude, forecast };
-  });
+  readonly #forecasts: Forecast[] = this.#searches
+    .filter(({ forecast }) => forecast)
+    .map(({ file, geocoding }) => {
+      const [top] = geocoding.results;
+      const forecast = FORECAST.parse(readFixture(`forecast-${file}.json`));
+      return { latitude: top.latitude, longitude: top.longitude, forecast };
+    });
 
   readonly #server = setupServer(
     http.get(ENDPOINTS.geocoding, ({ request }) =>
