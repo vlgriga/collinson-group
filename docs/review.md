@@ -84,8 +84,8 @@ A skip has to be visible. A role that was not started is named in the report alo
 Architecture strictly as the documentation describes it: which way dependencies point
 (`graphql → ranking ← {locations, weather, jobs}`, `ranking → scoring`, `jobs → weather`), that
 `ranking` sees only its own ports, that modules are reached only through their `index.ts`, that
-concrete classes are wired only in `api.ts` and `worker.ts`, that resolvers stay thin and `scoring`
-stays pure, and that the GraphQL schema changes only additively.
+concrete classes are wired only in `api.ts`, `worker.ts` and the `app.ts` they share, that
+resolvers stay thin and `scoring` stays pure, and that the GraphQL schema changes only additively.
 
 Nothing enforces these boundaries automatically, so this role is where they are held. It raises
 nothing without pointing at a rule that is written down, in the architecture, an ADR or the style

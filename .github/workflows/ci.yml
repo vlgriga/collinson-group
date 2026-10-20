@@ -15,5 +15,5 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: make check
-      - run: npm run test:unit
+      # What the pre-push hook runs; Testcontainers starts Postgres on the runner's Docker.
+      - run: make gate

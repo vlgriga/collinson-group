@@ -71,8 +71,8 @@ to narrow.
 **Architecture**
 - Layering: `graphql → ranking ← {locations, weather, jobs}`, `ranking → scoring`,
   `jobs → weather`; anything may import `db`, `shared`, `config`. No cycles.
-- Modules import each other only through `index.ts`. Concrete classes are wired only in `api.ts` and
-  `worker.ts`.
+- Modules import each other only through `index.ts`. Concrete classes are wired only in `api.ts`,
+  `worker.ts` and the `createApp` they share in `app.ts`.
 - `ranking` talks to the outside only through `ranking/ports.ts`. Resolvers are thin.
 - `scoring/` is pure: no I/O, no `Date.now()`, no logging.
 

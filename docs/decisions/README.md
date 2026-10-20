@@ -11,8 +11,9 @@ Short records of significant decisions: context, decision, consequences, alterna
 | [0005](0005-daily-granularity-upsert.md) | Daily granularity, upserted forecasts + raw payload log | Accepted; `timezone=auto` superseded by 0009 |
 | [0006](0006-drizzle-orm.md) | Drizzle ORM for data access | Accepted |
 | [0007](0007-graphql-yoga-schema-first.md) | GraphQL Yoga, schema-first with codegen | Accepted |
-| [0008](0008-layered-modules-ports-at-seams.md) | Layered feature modules with ports at the I/O seams | Accepted |
+| [0008](0008-layered-modules-ports-at-seams.md) | Layered feature modules with ports at the I/O seams | Accepted; composition roots refined by 0010 |
 | [0009](0009-forecast-week-in-the-location-timezone.md) | Forecast week as explicit dates in the location's timezone | Accepted |
+| [0010](0010-one-composition-function.md) | One composition function shared by the entrypoints and the tests | Accepted |
 
 Template:
 

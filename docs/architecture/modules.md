@@ -19,6 +19,7 @@
 ```
 src/
   api.ts  worker.ts    # entrypoints and composition roots
+  app.ts               # createApp: the wiring both entrypoints and the tests share
   config/  db/  shared/
   graphql/  ranking/  locations/  weather/  scoring/  jobs/
 test/                  # mirrors src/, see testing.md
