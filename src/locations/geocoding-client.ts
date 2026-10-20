@@ -20,7 +20,8 @@ const PLACE = z.object({
   timezone: z.string(),
 });
 
-const RESPONSE = z.object({ results: z.tuple([PLACE]).rest(PLACE) });
+// Only the match taken is checked: a lower-ranked one may lack a country, and is no reason to fail.
+const RESPONSE = z.object({ results: z.tuple([PLACE]).rest(z.unknown()) });
 
 /** A place as the geocoder knows it, before it is stored. */
 export type GeocodedPlace = Omit<Location, 'id'> & {

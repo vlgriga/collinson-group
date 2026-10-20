@@ -7,7 +7,10 @@ import { z } from 'zod';
 const FIXTURES = new URL('../fixtures/open-meteo/', import.meta.url);
 
 /** The places the fake knows: the name a request gives, and the files it is answered from. */
-const PLACES = [{ name: 'chamonix', file: 'chamonix' }] as const;
+const PLACES = [
+  { name: 'chamonix', file: 'chamonix' },
+  { name: 'victoria', file: 'victoria' },
+] as const;
 
 const GEOCODING = z.looseObject({
   results: z

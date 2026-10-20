@@ -27,6 +27,19 @@ describe('activityRanking', () => {
     });
   });
 
+  it('resolves a city some of whose lower-ranked matches have no country', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Victoria' });
+
+    // Then
+    expect(response.data?.activityRanking.location).toEqual(
+      expect.objectContaining({ name: 'Vitória', country: 'Brazil' }),
+    );
+  });
+
   it('scores outdoor sightseeing for the 7 days from today, each with a rating and a reason', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });

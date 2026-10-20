@@ -1,5 +1,7 @@
 // Records the Open-Meteo responses the test fake serves (docs/testing.md#fixtures):
-// `npx tsx scripts/record-fixtures.ts`, then commit what changed in test/fixtures/open-meteo/.
+// `npx tsx scripts/record-fixtures.ts [file ...]`, then commit what changed in
+// test/fixtures/open-meteo/. Naming files records only those places, so the others keep the
+// values their tests expect.
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -8,7 +10,13 @@ import { z } from 'zod';
 const FIXTURES = join(import.meta.dirname, '../test/fixtures/open-meteo');
 
 /** The places the fake knows, and the name their files are kept under. */
-const PLACES = [{ name: 'Chamonix', file: 'chamonix' }] as const;
+const PLACES = [
+  { name: 'Chamonix', file: 'chamonix' },
+  // Some of its lower-ranked matches have no country.
+  { name: 'Victoria', file: 'victoria' },
+] as const;
+
+const only = process.argv.slice(2);
 
 // Everything docs/design/activity-ranking.md#open-meteo-calls asks Forecast for, so that one
 // recording serves every activity's scorer.
@@ -34,7 +42,7 @@ const TOP_MATCH = z.object({
     .rest(z.unknown()),
 });
 
-for (const place of PLACES) {
+for (const place of PLACES.filter(({ file }) => only.length === 0 || only.includes(file))) {
   const geocoding = await getJson('https://geocoding-api.open-meteo.com/v1/search', {
     name: place.name,
     count: '10',
