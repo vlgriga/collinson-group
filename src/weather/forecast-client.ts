@@ -19,7 +19,7 @@ const DAILY = z.object({
   daylight_duration: SERIES,
   wind_speed_10m_max: SERIES,
   uv_index_max: SERIES,
-  weather_code: SERIES,
+  weather_code: z.array(z.int().nullable()),
 });
 
 // Asked for by the names the response is checked against, so the two cannot drift apart.
@@ -32,9 +32,15 @@ const RESPONSE = z.object({
   ),
 });
 
+export type Forecast = {
+  days: DailyWeather[];
+  /** The response as Open-Meteo sent it, kept with the fetch. */
+  payload: unknown;
+};
+
 /** Open-Meteo Forecast: a place's daily weather, converted to the units its names carry. */
 export class ForecastClient {
-  async daily(location: Location, dates: readonly LocalDate[]): Promise<DailyWeather[]> {
+  async daily(location: Location, dates: readonly LocalDate[]): Promise<Forecast> {
     const [first] = dates;
     const last = dates.at(-1);
     if (first === undefined || last === undefined) {
@@ -49,8 +55,9 @@ export class ForecastClient {
       start_date: first,
       end_date: last,
     }).toString();
-    const { daily } = await getJson(url, RESPONSE);
-    return daily.time.map((date, day) => ({
+    const payload = await getJson(url);
+    const { daily } = RESPONSE.parse(payload);
+    const days = daily.time.map((date, day) => ({
       date,
       precipitationMm: daily.precipitation_sum[day] ?? null,
       apparentTemperatureMaxC: daily.apparent_temperature_max[day] ?? null,
@@ -60,6 +67,7 @@ export class ForecastClient {
       uvIndexMax: daily.uv_index_max[day] ?? null,
       weatherCode: daily.weather_code[day] ?? null,
     }));
+    return { days, payload };
   }
 }
 

@@ -1,9 +1,9 @@
 import type { Env } from './config/index.js';
 import { connectDatabase, type Database } from './db/index.js';
 import { createGraphqlServer, type GraphqlServer } from './graphql/index.js';
-import { GeocodingClient, LocationService } from './locations/index.js';
+import { GeocodingClient, LocationRepository, LocationService } from './locations/index.js';
 import { RankingService, type Clock } from './ranking/index.js';
-import { ForecastClient, ForecastService } from './weather/index.js';
+import { ForecastClient, ForecastRepository, ForecastService } from './weather/index.js';
 
 export type AppDependencies = {
   env: Env;
@@ -24,9 +24,16 @@ export type App = {
  * differ only in what they pass in (docs/architecture/bootstrap.md).
  */
 export function createApp({ env, clock }: AppDependencies): App {
-  const database = connectDatabase(env.DATABASE_URL);
-  const locations = new LocationService({ geocoding: new GeocodingClient() });
-  const forecasts = new ForecastService({ client: new ForecastClient() });
+  const { db, close } = connectDatabase(env.DATABASE_URL);
+  const locations = new LocationService({
+    geocoding: new GeocodingClient(),
+    repository: new LocationRepository({ db }),
+  });
+  const forecasts = new ForecastService({
+    client: new ForecastClient(),
+    repository: new ForecastRepository({ db }),
+    clock,
+  });
   const ranking = new RankingService({ locations, forecasts, clock });
-  return { clock, db: database.db, yoga: createGraphqlServer(ranking), close: database.close };
+  return { clock, db, yoga: createGraphqlServer(ranking), close };
 }

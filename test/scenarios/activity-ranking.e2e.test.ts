@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { createTestApp } from '../app.js';
 import { fixedClock } from '../fakes/clock.js';
+import { readLocations } from '../locations/factories/location.js';
+import { readDailyWeather, readForecastFetches } from '../weather/factories/forecast.js';
 import { requestActivityRanking } from './support.js';
 
 describe('activityRanking', () => {
@@ -45,6 +47,35 @@ describe('activityRanking', () => {
           reasons: SOME_REASON,
         })),
       },
+    ]);
+  });
+
+  it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    const [chamonix, ...others] = await readLocations(app.db);
+    expect({ geocodingId: chamonix?.geocodingId, others }).toEqual({
+      geocodingId: 3027301,
+      others: [],
+    });
+    expect(await readDailyWeather(app.db)).toEqual(
+      WEEK.map((date) => expect.objectContaining({ locationId: chamonix?.id, date }) as unknown),
+    );
+    expect(await readForecastFetches(app.db)).toEqual([
+      expect.objectContaining({
+        locationId: chamonix?.id,
+        source: 'FORECAST',
+        status: 'SUCCEEDED',
+        fetchedAt: new Date('2026-10-18T09:00:00Z'),
+        rawPayload: expect.objectContaining({
+          daily: expect.objectContaining({ time: WEEK }) as unknown,
+        }) as unknown,
+      }) as unknown,
     ]);
   });
 });

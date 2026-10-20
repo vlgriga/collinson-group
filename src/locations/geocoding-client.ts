@@ -9,6 +9,7 @@ const SEARCH_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const CANDIDATES = '10';
 
 const PLACE = z.object({
+  id: z.int(),
   name: z.string(),
   country: z.string(),
   country_code: z.string(),
@@ -21,13 +22,20 @@ const PLACE = z.object({
 
 const RESPONSE = z.object({ results: z.tuple([PLACE]).rest(PLACE) });
 
+/** A place as the geocoder knows it, before it is stored. */
+export type GeocodedPlace = Omit<Location, 'id'> & {
+  /** The geocoder's own id: two names for one place share it. */
+  geocodingId: number;
+};
+
 /** Open-Meteo Geocoding: a name to the place it most likely means. */
 export class GeocodingClient {
-  async search(name: string): Promise<Location> {
+  async search(name: string): Promise<GeocodedPlace> {
     const url = new URL(SEARCH_URL);
     url.search = new URLSearchParams({ name, count: CANDIDATES }).toString();
-    const [top] = (await getJson(url, RESPONSE)).results;
+    const [top] = RESPONSE.parse(await getJson(url)).results;
     return {
+      geocodingId: top.id,
       name: top.name,
       country: top.country,
       countryCode: top.country_code,

@@ -8,8 +8,9 @@ export interface Clock {
   now(): Date;
 }
 
-/** A city or town as the geocoder knows it. */
+/** A city or town as the geocoder knows it, once stored. */
 export type Location = {
+  id: string;
   name: string;
   country: string;
   /** ISO 3166-1 alpha-2. */
