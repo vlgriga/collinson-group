@@ -20,11 +20,12 @@ const CODES = [
  * error level, client faults included.
  */
 export function toResponseError(error: unknown): unknown {
-  const code = CODES.find(([type]) => error instanceof type)?.[1];
-  if (code === undefined || !(error instanceof Error)) {
-    return error;
+  for (const [type, code] of CODES) {
+    if (error instanceof type) {
+      // Without the domain error as its originalError: Yoga masks an error whose chain does not end
+      // in a GraphQL error.
+      return createGraphQLError(error.message, { extensions: { code } });
+    }
   }
-  // Without the domain error as its originalError: Yoga masks an error whose chain does not end in
-  // a GraphQL error.
-  return createGraphQLError(error.message, { extensions: { code } });
+  return error;
 }
