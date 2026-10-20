@@ -44,4 +44,31 @@ describe('scoreOutdoorSightseeing', () => {
     // Then
     expect(score).toBe(0);
   });
+
+  it('gives as reasons the three factors that cost the most points, the costliest first', () => {
+    // Given
+    const day = buildDay({
+      ...IDEAL,
+      apparentTemperatureMaxC: 0,
+      sunshineDurationH: 0,
+      windSpeedMaxKmh: 35,
+    });
+
+    // When
+    const { reasons } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(reasons).toEqual(['Feels like 0 °C', 'Sunshine 0% of daylight', 'Wind up to 35 km/h']);
+  });
+
+  it('gives as reasons the three weightiest factors when none costs a point', () => {
+    // Given
+    const day = buildDay(IDEAL);
+
+    // When
+    const { reasons } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(reasons).toEqual(['No precipitation', 'Feels like 20 °C', 'Sunshine 50% of daylight']);
+  });
 });
