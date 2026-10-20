@@ -8,6 +8,12 @@ export type CurvePoint = { readonly at: number; readonly score: number };
 /** Points in rising `at` order; linear between two of them, flat beyond the first and the last. */
 export type Curve = readonly [CurvePoint, ...CurvePoint[]];
 
+/**
+ * The lowest score of each rating; below `fair` a day is POOR. Equal 20-point bands above 40, so
+ * a day short of 40 — under half of what is possible, on a curve that forgives a lot — is POOR.
+ */
+export const RATING_THRESHOLDS = { fair: 40, good: 60, excellent: 80 } as const;
+
 export type Factor = {
   /** The share of the day's score the factor decides; an activity's weights add up to 1. */
   readonly weight: number;
