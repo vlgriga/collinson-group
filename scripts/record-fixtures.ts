@@ -7,22 +7,9 @@ import { join } from 'node:path';
 
 import { z } from 'zod';
 
-const FIXTURES = join(import.meta.dirname, '../test/fixtures/open-meteo');
+import { SEARCHES } from '../test/fixtures/open-meteo/searches.js';
 
-/**
- * The searches the fake knows, and the name their files are kept under. A search with `forecast:
- * false` finds a place another search already has a forecast for.
- */
-const PLACES: readonly { name: string; countryCode?: string; file: string; forecast?: false }[] = [
-  { name: 'Chamonix', file: 'chamonix' },
-  // The same place as Chamonix, by another name.
-  { name: 'Chamonix Mont Blanc', file: 'chamonix-mont-blanc', forecast: false },
-  // Some of its lower-ranked matches have no country.
-  { name: 'Victoria', file: 'victoria' },
-  { name: 'Paris', file: 'paris' },
-  // Paris, Texas: the country code changes the top match.
-  { name: 'Paris', countryCode: 'US', file: 'paris-us' },
-];
+const FIXTURES = join(import.meta.dirname, '../test/fixtures/open-meteo');
 
 const only = process.argv.slice(2);
 
@@ -50,7 +37,7 @@ const TOP_MATCH = z.object({
     .rest(z.unknown()),
 });
 
-for (const place of PLACES.filter(({ file }) => only.length === 0 || only.includes(file))) {
+for (const place of SEARCHES.filter(({ file }) => only.length === 0 || only.includes(file))) {
   const geocoding = await getJson('https://geocoding-api.open-meteo.com/v1/search', {
     name: place.name,
     count: '10',
