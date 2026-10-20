@@ -20,7 +20,11 @@ Requirements: R9–R11, N2.
 - **Freshness.** Data is fresh while the latest successful `forecast_fetches` row for the
   location is younger than the TTL (3 h by default).
 - **Stale while revalidate.** A request that finds stale data answers with it, `stale: true`, and
-  enqueues a refresh.
+  enqueues a refresh. `stale: Boolean!` is added to `ActivityRanking` here; until then,
+  [activity ranking](activity-ranking.md) fetches only when the stored days do not cover the
+  request.
+- **Requested places.** Each request sets `locations.last_requested_at`, which the background
+  refresh selects on.
 - **One fetch per place.** The `fetch-forecast` job carries a singleton key per location, used by
   the cold-miss path and by the refresh alike, so simultaneous requests cause one fetch.
 - **Background refresh.** An hourly cron job selects locations requested in the last 7 days whose

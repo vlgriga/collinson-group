@@ -7,7 +7,7 @@
 
 Open-Meteo is a free service outside our control. An outage on its side should not be an outage on
 ours while stored data exists, and every failure the client sees should be named. Requirements:
-R12, R13, N2.
+R8 for "data temporarily missing", R12, R13 for `UPSTREAM_UNAVAILABLE`, N2.
 
 ## Goals and non-goals
 
