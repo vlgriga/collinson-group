@@ -57,9 +57,11 @@ function score(
 }
 
 function sunshineShare({ sunshineDurationH, daylightDurationH }: DailyWeather): number | null {
-  return sunshineDurationH === null || daylightDurationH === null
-    ? null
-    : sunshineDurationH / daylightDurationH;
+  if (sunshineDurationH === null || daylightDurationH === null) {
+    return null;
+  }
+  // A polar night has no daylight to share, and no sun either.
+  return daylightDurationH > 0 ? sunshineDurationH / daylightDurationH : 0;
 }
 
 /** A missing factor is left out, and the weights of the others rescaled to add up to 1. */

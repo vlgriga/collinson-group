@@ -81,6 +81,17 @@ describe('scoreOutdoorSightseeing', () => {
     expect(scored.score).toBe(score);
   });
 
+  it('counts a day without daylight as one without sunshine', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, sunshineDurationH: 0, daylightDurationH: 0 });
+
+    // When
+    const { score } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(score).toBe(80);
+  });
+
   it.each([95, 96, 99] as const)(
     'caps the day at 10 in a thunderstorm (weather code %i)',
     (weatherCode) => {
