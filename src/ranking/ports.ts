@@ -1,5 +1,8 @@
 // The seams the use case needs, implemented outside this module (docs/architecture/ports.md).
 
+import type { DailyWeather } from '../scoring/index.js';
+import type { LocalDate } from '../shared/index.js';
+
 /** Says what time it is, so that "now" is the same instant for everything a request does. */
 export interface Clock {
   now(): Date;
@@ -23,4 +26,10 @@ export type Location = {
 /** Turns the name a client sent into one place. */
 export interface LocationResolver {
   resolve(request: { city: string }): Promise<Location>;
+}
+
+/** Fetches a place's forecast now. */
+export interface ForecastFetcher {
+  /** The days of `dates`, in date order. */
+  fetch(location: Location, dates: readonly LocalDate[]): Promise<DailyWeather[]>;
 }

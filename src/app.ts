@@ -3,6 +3,7 @@ import { connectDatabase, type Database } from './db/index.js';
 import { createGraphqlServer, type GraphqlServer } from './graphql/index.js';
 import { GeocodingClient, LocationService } from './locations/index.js';
 import { RankingService, type Clock } from './ranking/index.js';
+import { ForecastClient, ForecastService } from './weather/index.js';
 
 export type AppDependencies = {
   env: Env;
@@ -25,6 +26,7 @@ export type App = {
 export function createApp({ env, clock }: AppDependencies): App {
   const database = connectDatabase(env.DATABASE_URL);
   const locations = new LocationService({ geocoding: new GeocodingClient() });
-  const ranking = new RankingService({ locations });
+  const forecasts = new ForecastService({ client: new ForecastClient() });
+  const ranking = new RankingService({ locations, forecasts, clock });
   return { clock, db: database.db, yoga: createGraphqlServer(ranking), close: database.close };
 }
