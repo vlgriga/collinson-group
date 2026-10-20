@@ -31,7 +31,9 @@ export async function setup(root: TestProject): Promise<(() => Promise<void>) | 
     await createTemplate(serverUrl, root.config.root);
   } catch (error) {
     // Vitest gets no teardown from a setup that throws.
-    await container.stop();
+    await container.stop().catch((stopping: unknown) => {
+      throw new AggregateError([error, stopping], 'The template failed, and so did its container');
+    });
     throw error;
   }
 

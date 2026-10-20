@@ -43,8 +43,12 @@ async function createWorkerDatabase(): Promise<string> {
       `No database at this level: a test that needs one ends in ${DATABASE_SUFFIXES}`,
     );
   }
-  // Vitest numbers its workers from 1 and sets the variable in every one of them.
-  const database = `test_${process.env.VITEST_POOL_ID ?? '1'}`;
+  // Vitest numbers its workers from 1; without the number, workers would share one database.
+  const worker = process.env.VITEST_POOL_ID;
+  if (worker === undefined) {
+    throw new Error('VITEST_POOL_ID is not set: no database of its own for this worker');
+  }
+  const database = `test_${worker}`;
   const server = new pg.Client({ connectionString: serverUrl });
   await server.connect();
   try {

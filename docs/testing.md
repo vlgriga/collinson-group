@@ -336,3 +336,5 @@ every run; `--sequence.seed=<n>` reproduces an order-dependent failure.
   date.
 - Several cases in one test.
 - Waiting on real time to control ordering or a race.
+- `it.concurrent` or `describe.concurrent` in a test that reaches the database: the tests of a
+  worker share its database and run one at a time. Parallelism comes from the workers.
