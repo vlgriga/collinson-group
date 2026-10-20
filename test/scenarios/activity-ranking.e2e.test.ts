@@ -160,6 +160,21 @@ describe('activityRanking', () => {
     expect(app.openMeteo.requestsTo('geocoding')).toHaveLength(1);
   });
 
+  it('geocodes a name asked for before again when the country code differs', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+    await requestActivityRanking(app, { city: 'Paris' });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Paris', countryCode: 'US' });
+
+    // Then
+    expect(response.data?.activityRanking.location).toEqual(
+      expect.objectContaining({ countryCode: 'US', admin1: 'Texas' }),
+    );
+    expect(app.openMeteo.requestsTo('geocoding')).toHaveLength(2);
+  });
+
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
