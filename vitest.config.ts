@@ -1,12 +1,7 @@
 import { globSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 
-// One project per test level; the file suffix declares the level (docs/testing.md).
-const LEVELS = [
-  { name: 'unit', suffix: '.unit.test.ts' },
-  { name: 'integration', suffix: '.int.test.ts' },
-  { name: 'e2e', suffix: '.e2e.test.ts' },
-] as const;
+import { LEVELS } from './test/levels.js';
 
 const unleveled = globSync('{src,test}/**/*.test.ts').filter(
   (file) => file.startsWith('src/') || !LEVELS.some(({ suffix }) => file.endsWith(suffix)),

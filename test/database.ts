@@ -1,6 +1,8 @@
 import pg from 'pg';
 import { inject } from 'vitest';
 
+import { LEVELS } from './levels.js';
+
 declare module 'vitest' {
   export interface ProvidedContext {
     /** The run's Postgres server, given only to the projects whose tests reach a database. */
@@ -10,6 +12,10 @@ declare module 'vitest' {
 
 /** Migrated once per run by global-setup.ts; never connected to by a test. */
 export const TEMPLATE_DATABASE = 'template_migrated';
+
+const DATABASE_SUFFIXES = LEVELS.filter(({ database }) => database)
+  .map(({ suffix }) => suffix)
+  .join(' or ');
 
 let workerDatabase: Promise<string> | undefined;
 
@@ -34,7 +40,7 @@ async function createWorkerDatabase(): Promise<string> {
   const serverUrl = inject('postgresUrl');
   if (serverUrl === undefined) {
     throw new Error(
-      'No database in a unit run: a test that needs one ends in .int.test.ts or .e2e.test.ts',
+      `No database at this level: a test that needs one ends in ${DATABASE_SUFFIXES}`,
     );
   }
   // Vitest numbers its workers from 1 and sets the variable in every one of them.

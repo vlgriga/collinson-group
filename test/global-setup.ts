@@ -7,20 +7,21 @@ import pg from 'pg';
 import type { TestProject } from 'vitest/node';
 
 import { TEMPLATE_DATABASE, withDatabase } from './database.js';
+import { LEVELS } from './levels.js';
 
 const run = promisify(execFile);
 
 // The same major version as production (docs/testing.md#principles).
 const POSTGRES_IMAGE = 'postgres:17-alpine';
-// The projects of vitest.config.ts whose tests reach a database.
-const LEVELS_WITH_A_DATABASE = new Set(['integration', 'e2e']);
 
 /**
  * Starts the run's Postgres and migrates the template every worker's database is copied from;
  * a run of the unit level alone starts nothing.
  */
 export async function setup(root: TestProject): Promise<(() => Promise<void>) | undefined> {
-  const levels = root.vitest.projects.filter(({ name }) => LEVELS_WITH_A_DATABASE.has(name));
+  const levels = root.vitest.projects.filter(({ name }) =>
+    LEVELS.some((level) => level.database && level.name === name),
+  );
   if (levels.length === 0) {
     return undefined;
   }
