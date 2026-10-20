@@ -33,6 +33,7 @@ type OutdoorSightseeingRules = {
   >;
   readonly caps: {
     readonly thunderstorm: Cap & { readonly weatherCodes: readonly number[] };
+    readonly heavyPrecipitation: Cap & { readonly fromMm: number };
   };
 };
 
@@ -94,6 +95,12 @@ export const OUTDOOR_SIGHTSEEING = {
       // the day.
       weatherCodes: Object.values(WMO_THUNDERSTORM),
       maxScore: 10,
+    },
+    heavyPrecipitation: {
+      // 10 mm a day is the "heavy precipitation day" of the ETCCDI climate indices: rain or snow
+      // that keeps people indoors whatever else the day offers.
+      fromMm: 10,
+      maxScore: 20,
     },
   },
 } as const satisfies OutdoorSightseeingRules;

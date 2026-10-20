@@ -70,6 +70,43 @@ describe('scoreOutdoorSightseeing', () => {
     expect(reasons).toEqual(['Thunderstorm', 'No precipitation', 'Feels like 20 °C']);
   });
 
+  it('caps the day at 20 from 10 mm of precipitation', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, precipitationMm: 10 });
+
+    // When
+    const { score } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(score).toBe(20);
+  });
+
+  it('does not cap the day at 9.9 mm of precipitation', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, precipitationMm: 9.9 });
+
+    // When
+    const { score } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(score).toBe(65);
+  });
+
+  it('leads the reasons with heavy rain or snow', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, precipitationMm: 12 });
+
+    // When
+    const { reasons } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(reasons).toEqual([
+      'Heavy rain or snow',
+      '12.0 mm of precipitation',
+      'Feels like 20 °C',
+    ]);
+  });
+
   it('gives as reasons the three factors that cost the most points, the costliest first', () => {
     // Given
     const day = buildDay({

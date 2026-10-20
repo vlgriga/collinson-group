@@ -18,6 +18,9 @@ export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
   if (caps.thunderstorm.weatherCodes.some((code) => code === day.weatherCode)) {
     applied.push({ maxScore: caps.thunderstorm.maxScore, reason: 'Thunderstorm' });
   }
+  if (day.precipitationMm !== null && day.precipitationMm >= caps.heavyPrecipitation.fromMm) {
+    applied.push({ maxScore: caps.heavyPrecipitation.maxScore, reason: 'Heavy rain or snow' });
+  }
   // In descending weight, which the reasons fall back on when factors cost the same.
   const scored = [
     score(factors.precipitation, day.precipitationMm, (mm) =>
