@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createTestApp } from '../app.js';
 import { fixedClock } from '../fakes/clock.js';
-import { readLocations } from '../locations/factories/location.js';
+import { readLocationAliases, readLocations } from '../locations/factories/location.js';
 import { readDailyWeather, readForecastFetches } from '../weather/factories/forecast.js';
 import { requestActivityRanking } from './support.js';
 
@@ -173,6 +173,32 @@ describe('activityRanking', () => {
       expect.objectContaining({ countryCode: 'US', admin1: 'Texas' }),
     );
     expect(app.openMeteo.requestsTo('geocoding')).toHaveLength(2);
+  });
+
+  it('keeps one place for a second name the geocoder resolves to it, remembering both names', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix Mont Blanc' });
+
+    // Then
+    expect(response.data?.activityRanking.location.name).toBe('Chamonix');
+    const [chamonix, ...others] = await readLocations(app.db);
+    expect(others).toEqual([]);
+    expect(await readLocationAliases(app.db)).toEqual([
+      expect.objectContaining({
+        normalizedQuery: 'chamonix',
+        countryCode: '',
+        locationId: chamonix?.id,
+      }),
+      expect.objectContaining({
+        normalizedQuery: 'chamonix mont blanc',
+        countryCode: '',
+        locationId: chamonix?.id,
+      }),
+    ]);
   });
 
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
