@@ -21,9 +21,6 @@ Requirements: R9–R11, N2.
   younger than the TTL (3 h by default).
 - **Stale while revalidate.** A request that finds stale data answers with it, `stale: true`, and
   enqueues a refresh. `stale: Boolean!` is added to `ActivityRanking` here.
-- **Coverage still comes first.** Data that no longer covers the coming week is fetched inline,
-  as in [activity ranking](activity-ranking.md#request-flow), however fresh it is; the TTL decides
-  only between a fresh answer and a stale one.
 - **Requested places.** Each request sets `locations.last_requested_at`, which the background
   refresh selects on.
 - **One fetch per place.** The `fetch-forecast` job carries a singleton key per location, used by
@@ -53,3 +50,9 @@ Requirements: R9–R11, N2.
 |---|---|---|
 | Postgres as both store and queue | Contention at high scale | Fine for this scope; move the queue to Redis if needed |
 | The TTL and the active window are guesses | Too many or too few refreshes | Both are configuration; PRD open question 5 decides them |
+
+- How does the freshness window meet [activity ranking](activity-ranking.md#request-flow)'s rule
+  that a stored week which has run out is fetched inline? The week runs out at each place's
+  midnight, so for an active place that inline fetch is daily, outside the de-duplication, and
+  in conflict with [resilience](resilience.md)'s stored-data fallback. Fetch inline, or answer
+  stale and refresh in the background: to be settled in planning.

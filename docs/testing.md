@@ -136,8 +136,8 @@ There are three kinds of helper, named by what they touch:
 - Real Open-Meteo responses are recorded once into `test/fixtures/open-meteo/`
   (`forecast-chamonix.json`, `marine-biarritz.json`, `marine-inland-null.json`,
   `geocoding-paris.json`, …). `scripts/record-fixtures.ts` refreshes them, and they are committed.
-- The [Open-Meteo fake](#isolating-dependencies) serves them, rebasing their dates to the test
-  clock's "today" in the location's timezone.
+- The [Open-Meteo fake](#isolating-dependencies) serves them, rebasing their dates to the
+  `start_date`–`end_date` it is asked for ([ADR 0009](decisions/0009-forecast-week-in-the-location-timezone.md)).
 - Scorer tests build their inputs with `build…` helpers, not from JSON.
 
 ## Literals

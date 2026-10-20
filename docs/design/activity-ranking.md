@@ -50,15 +50,16 @@ sequenceDiagram
    `countryCode` ISO 3166-1 alpha-2 (upper-cased), `days` 1–7.
 2. **Resolve the place.** Normalise the name (trim, collapse whitespace, lower-case) and look up
    `location_aliases` by (name, country code). On a miss, call Open-Meteo Geocoding, take the
-   **top match** ([ADR 0003](../decisions/0003-single-query-geocoding.md)), and store the location
-   and the alias. No match: `LocationNotFoundError`.
-3. **Load the forecast.** "Today" is the `Clock`'s instant in the place's timezone. The stored data
-   **covers the coming week** when, for each of the 7 dates from today, there is a `daily_weather`
-   row and, unless `has_marine` is false, a `daily_marine` row. The week is checked whatever `days`
-   asks for, so the data used is never more than a day old. If it is not covered, the forecast is
-   fetched inline, upserted, and read again, once: if the provider returned fewer days, the answer
-   has the stored days from today on, and the request does not fetch again.
-   [Refresh](refresh.md) adds a freshness window on top of this rule; it does not replace it.
+   **top match** ([ADR 0003](../decisions/0003-single-query-geocoding.md)), and upsert the location
+   (on `geocoding_id`, since two names can resolve to one place) and the alias. No match:
+   `LocationNotFoundError`.
+3. **Load the forecast.** "Today" is the `Clock`'s instant in the place's timezone; the week is the
+   7 dates from today. The stored data **covers the week** when each of its dates has a
+   `daily_weather` row and, unless `has_marine` is false, a `daily_marine` row. The week is checked
+   whatever `days` asks for, so the data used is never more than a day old. If it is not covered,
+   the forecast for exactly that week is fetched inline, upserted, and read again; a response that
+   does not hold exactly those dates is invalid. How this rule meets the freshness window is
+   settled in [Refresh](refresh.md).
 4. **Score** the requested days for every activity, aggregate, order, and answer.
 
 ### Open-Meteo calls
@@ -66,16 +67,22 @@ sequenceDiagram
 | API | Endpoint | Key parameters |
 |---|---|---|
 | Geocoding | `geocoding-api.open-meteo.com/v1/search` | `name`, `count=10`, `countryCode` |
-| Forecast | `api.open-meteo.com/v1/forecast` | `daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,rain_sum,snowfall_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,weather_code,uv_index_max`, `hourly=snow_depth`, `forecast_days=7`, `timezone=<the location's>` |
-| Marine | `marine-api.open-meteo.com/v1/marine` | `daily=wave_height_max,wave_period_max,wave_direction_dominant,swell_wave_height_max,swell_wave_period_max,wind_wave_height_max`, `forecast_days=7`, `timezone=<the location's>` |
+| Forecast | `api.open-meteo.com/v1/forecast` | `daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,rain_sum,snowfall_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,sunshine_duration,daylight_duration,weather_code,uv_index_max`, `hourly=snow_depth`, `start_date`, `end_date` (the week), `timezone=<the location's>` |
+| Marine | `marine-api.open-meteo.com/v1/marine` | `daily=wave_height_max,wave_period_max,wave_direction_dominant,swell_wave_height_max,swell_wave_period_max,wind_wave_height_max`, `start_date`, `end_date` (the week), `timezone=<the location's>` |
 
-Forecast and Marine are asked for the geocoder's timezone rather than `auto`, so their dates are
-the same calendar as "today". Responses are validated with zod. Units are converted at ingest
-(snow depth m → cm, durations s → h); hourly snow depth is reduced to its daily maximum.
+Forecast and Marine are asked for the week as explicit dates in the geocoder's timezone
+([ADR 0009](../decisions/0009-forecast-week-in-the-location-timezone.md)), so the stored dates and
+"today" are the same calendar and a fetch always covers the week it was made for. Responses are
+validated with zod. Units are converted at ingest (snow depth m → cm, durations s → h); hourly
+snow depth is reduced to its daily maximum.
 
-`has_marine` is set from the Marine response: true when it has values, false when every value is
-null (the place has no sea), and left as it was when the call fails. Marine is not called for a
-location with `has_marine = false`.
+A single value may be null in a response that is otherwise valid; it is stored as null. A scorer
+leaves a null factor out and rescales the other weights, and a hard cap whose value is null does
+not apply.
+
+`has_marine` is set from the Marine response: true when any value is present, false when every
+value is null (the place has no sea), and left as it was when the call fails. Marine is not called
+for a location with `has_marine = false`.
 
 A failed or invalid Open-Meteo response becomes an `UpstreamUnavailableError` in the client that
 received it. There are no retries yet.
@@ -164,7 +171,7 @@ come from the 2–3 most influential factors, in English, in metric units. Ratin
 | Skiing | snow depth (0.4), fresh snowfall (0.2), temperature (0.15), wind/gusts (0.15), sunshine (0.1) | gusts > 60 km/h; no snow on the ground | never (scores low) |
 | Surfing | wave height (0.35), swell period (0.3), wind speed (0.25), air temperature (0.1) | waves > 4 m; thunderstorm | `has_marine = false`, reason "No marine forecast here" |
 | Outdoor sightseeing | precipitation (0.35), apparent temperature (0.25), sunshine fraction (0.2), wind (0.1), UV (0.1) | thunderstorm; heavy rain or snow | never |
-| Indoor sightseeing | `50 + (100 − outdoor score) / 2`, from the day's rounded outdoor score: 50 on a perfect outdoor day, 100 on the worst. Its reasons are the outdoor day's reasons | none | never |
+| Indoor sightseeing | `50 + (100 − outdoor score) / 2`, from the day's rounded outdoor score: 50 on a perfect outdoor day, 100 on the worst. Its reasons are the outdoor day's reasons, prefixed "Outside: " | none | never |
 
 - **Rounding:** every score is rounded half up to an integer where it is computed — a day's score
   once its caps apply, the weekly score once averaged. What is compared afterwards is the integer
@@ -182,7 +189,7 @@ come from the 2–3 most influential factors, in English, in metric units. Ratin
 |---|---|---|
 | **One query, top geocoding match** ([ADR 0003](../decisions/0003-single-query-geocoding.md)) | Simple API, but ambiguous names may resolve to the wrong place; mitigated by `countryCode` and by returning the resolved location | `searchLocations` + `activityRanking(locationId)`, the natural next step if ambiguity matters in practice |
 | **A fetch when the stored week runs out** | The feature stands alone; stored data is used until it no longer covers the coming 7 days, so it is at most a day old | Fetching on every request (breaks R9); coverage of only the requested days (a `days: 1` client would keep a forecast for a week); a TTL here (belongs to Refresh) |
-| **Indoor rises as outdoor worsens** | Days differ, and a bad outdoor day ranks indoor high; it is a reading of PRD open question 3, not a fact | A constant score, which never tells days apart |
+| **Indoor rises as outdoor worsens** | Days differ, and a bad outdoor day ranks indoor high; indoor outranks outdoor whenever outdoor scores below about 67, a GOOD day included. The 50 and the ½ are configuration | A constant score, which never tells days apart |
 | **Weekly score as a plain mean** | Easy to explain and check; ignores that day 7 is less certain than day 1 | Lead-time weighting (PRD open question 2) |
 | **Scores computed on read** | Tiny CPU cost per request; scoring changes need no backfill | Score tables precomputed by the worker |
 | **Daily granularity, upserted, with a raw payload log** | Simple model and reads; loses intra-day nuance and forecast history | Hourly storage; append-only snapshots |
@@ -211,4 +218,7 @@ come from the 2–3 most influential factors, in English, in metric units. Ratin
 | Marine coverage near the coastline | Coastal towns marked inland, or the reverse | An explicit reason in the answer; later, a nearest-coast lookup |
 | Until Resilience, any Open-Meteo failure during a request answers `UPSTREAM_UNAVAILABLE` | A marine outage hides the other three activities | Resilience serves stored data and keeps a marine failure to surfing |
 | Until Refresh, stored data may be up to a day old | A forecast revision is missed | Refresh adds the freshness window |
+| The week runs out at each place's midnight | The first request of the day for a known place pays an inline fetch (~1–2 s), and simultaneous ones each fetch | Refresh settles it, with its de-duplication and the background refresh |
+| `has_marine = false` is never re-checked | A coastal place with one all-null Marine response loses surfing for good | Accepted: an inland point's Marine response is null by the model's grid, not by chance; a re-check if it shows |
+| An unknown name is not cached | Each repeat of a misspelled or random name calls Geocoding | Rate limiting in [Operations](operations.md); a negative cache if it shows |
 | Heuristic scoring is subjective | Rankings disputed | Thresholds in configuration, reasons in the output |
