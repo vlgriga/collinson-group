@@ -102,6 +102,20 @@ describe('activityRanking', () => {
       }),
     );
   });
+
+  it('answers a repeated request too, keeping one place and one row per day', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.errors).toBeUndefined();
+    expect(await readLocations(app.db)).toHaveLength(1);
+    expect((await readDailyWeather(app.db)).map(({ date }) => date)).toEqual(WEEK);
+  });
 });
 
 const WEEK = [
