@@ -43,7 +43,8 @@ advice and the author decides, answering in the PR description what they chose n
 the change reaches, each working from its own documents, at the ordinary threshold.
 
 It runs as a loop rather than as a single verdict — review, then fixes, then review again over what
-the fixes changed — until nothing blocking is left.
+the fixes changed — until nothing blocking is left. Only the first round is at `high`; the rounds
+after it run at `medium`, since they read the fixes, not the whole change.
 
 A round is one turn of it: read where the review stands on the pull request, review what is new,
 answer what came back and push the fixes. The loop is carried by those fixes — the push is what
