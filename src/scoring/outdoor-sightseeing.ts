@@ -14,16 +14,27 @@ type Cap = { maxScore: number; reason: string };
 
 export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
   const { factors, caps } = OUTDOOR_SIGHTSEEING;
+  const { precipitationMm, weatherCode } = day;
+  // A cap cannot be ruled out without its value, and a day that might be dangerous is not rated.
+  if (precipitationMm === null || weatherCode === null) {
+    return {
+      score: 0,
+      reasons: [
+        ...(precipitationMm === null ? ['Precipitation missing from the forecast'] : []),
+        ...(weatherCode === null ? ['Weather code missing from the forecast'] : []),
+      ],
+    };
+  }
   const applied: Cap[] = [];
-  if (caps.thunderstorm.weatherCodes.some((code) => code === day.weatherCode)) {
+  if (caps.thunderstorm.weatherCodes.some((code) => code === weatherCode)) {
     applied.push({ maxScore: caps.thunderstorm.maxScore, reason: 'Thunderstorm' });
   }
-  if (day.precipitationMm !== null && day.precipitationMm >= caps.heavyPrecipitation.fromMm) {
+  if (precipitationMm >= caps.heavyPrecipitation.fromMm) {
     applied.push({ maxScore: caps.heavyPrecipitation.maxScore, reason: 'Heavy rain or snow' });
   }
   // In descending weight, which the reasons fall back on when factors cost the same.
   const scored = [
-    score(factors.precipitation, day.precipitationMm, (mm) =>
+    score(factors.precipitation, precipitationMm, (mm) =>
       mm === 0 ? 'No precipitation' : `${mm.toFixed(1)} mm of precipitation`,
     ),
     score(

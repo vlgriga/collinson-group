@@ -154,6 +154,20 @@ describe('scoreOutdoorSightseeing', () => {
     ]);
   });
 
+  it.each([
+    { field: 'precipitationMm', reason: 'Precipitation missing from the forecast' },
+    { field: 'weatherCode', reason: 'Weather code missing from the forecast' },
+  ] as const)('scores 0 when a cap needs the missing $field, naming it', ({ field, reason }) => {
+    // Given
+    const day = buildDay({ ...IDEAL, [field]: null });
+
+    // When
+    const scored = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(scored).toEqual({ score: 0, reasons: [reason] });
+  });
+
   it('gives as reasons the three factors that cost the most points, the costliest first', () => {
     // Given
     const day = buildDay({
