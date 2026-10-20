@@ -2,7 +2,7 @@
 export type LocalDate = string & { readonly brand: 'LocalDate' };
 
 /** Today and the six days after it: "the next 7 days" of the requirements. */
-const WEEK_DAYS = 7;
+export const WEEK_DAYS = 7;
 
 /** The week from today in `timezone`, today being the date it is there at `instant`. */
 export function localWeek(instant: Date, timezone: string): LocalDate[] {

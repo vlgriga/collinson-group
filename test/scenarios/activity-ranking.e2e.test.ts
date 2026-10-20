@@ -102,6 +102,24 @@ describe('activityRanking', () => {
     });
   });
 
+  it.each(INVALID_INPUTS)(
+    'answers BAD_USER_INPUT for $input, storing nothing and asking Open-Meteo nothing',
+    async ({ variables }) => {
+      // Given
+      const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+      // When
+      const response = await requestActivityRanking(app, variables);
+
+      // Then
+      expect(response.errors?.map(({ extensions }) => extensions?.code)).toEqual([
+        'BAD_USER_INPUT',
+      ]);
+      expect(await readLocations(app.db)).toEqual([]);
+      expect(app.openMeteo.requests).toEqual([]);
+    },
+  );
+
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
@@ -179,6 +197,16 @@ const WEEK = [
   '2026-10-23',
   '2026-10-24',
 ];
+
+const INVALID_INPUTS = [
+  { input: 'an empty city', variables: { city: '' } },
+  { input: 'a city of spaces only', variables: { city: '   ' } },
+  { input: 'a city of 101 characters', variables: { city: 'a'.repeat(101) } },
+  { input: 'a three-letter country code', variables: { city: 'Paris', countryCode: 'USA' } },
+  { input: 'a one-letter country code', variables: { city: 'Paris', countryCode: 'U' } },
+  { input: '0 days', variables: { city: 'Paris', days: 0 } },
+  { input: '8 days', variables: { city: 'Paris', days: 8 } },
+] as const;
 
 const A_SCORE: unknown = expect.toSatisfy(
   (value) => Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 100,
