@@ -257,7 +257,7 @@ per third-party dependency, shared by all tests, in `test/fakes/`:
 - `open-meteo.ts` — msw handlers backed by the recorded fixtures. It answers geocoding, forecast and
   marine requests for the places it knows, returns an empty result for the ones it doesn't,
   records the requests it received, and takes the failure controls above. msw runs with
-  `onUnhandledRequest: 'error'`, so no test reaches the real API.
+  `onUnhandledFrame: 'error'`, so no test reaches the real API.
 - `clock.ts` — `fixedClock(instant)`, which a test can advance.
 
 A test may assert on what the fake received when the requirement is about the boundary itself, e.g.
