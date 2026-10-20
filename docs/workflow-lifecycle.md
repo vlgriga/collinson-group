@@ -125,9 +125,10 @@ Reviews are done with Claude Code's `/code-review`. The level is chosen to fit t
 - **Shallow — before `make pr`:** `/code-review low`. It catches obvious defects while they're
   still cheap: wrong logic, missing error handling, leftovers. Fix the findings, or answer them in
   the PR description.
-- **Deep — after `make ready`:** `/code-review high` on the PR. It checks correctness against
-  [architecture](architecture/), test coverage against [testing](testing.md), and conventions
-  against the [style guide](styleguide.md). Every finding is fixed or answered before merge.
+- **Deep — after `make ready`:** `/code-review high` on the PR, then `medium` for each round over
+  the fixes. It checks correctness against [architecture](architecture/), test coverage against
+  [testing](testing.md), and conventions against the [style guide](styleguide.md). Every finding is
+  fixed or answered before merge.
 
 A design deviation found in review doesn't get settled in the PR thread. It becomes an
 [ADR](decisions/) or a follow-up issue.
