@@ -4,8 +4,9 @@
 
 ## Composition roots
 
-`src/api.ts` and `src/worker.ts` are the only places concrete classes are constructed and bound to
-the ports. Each one:
+`src/api.ts`, `src/worker.ts` and the `createApp` they share in `src/app.ts` are the only places
+concrete classes are constructed and bound to the ports
+([ADR 0010](../decisions/0010-one-composition-function.md)). Each process:
 
 1. reads and validates the [configuration](configuration.md), and exits if it is invalid;
 2. builds the root logger, the database client and the job queue;

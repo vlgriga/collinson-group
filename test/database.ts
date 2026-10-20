@@ -52,7 +52,11 @@ async function createWorkerDatabase(): Promise<string> {
   return withDatabase(serverUrl, database);
 }
 
-/** Read from the catalogue every time, so a table a migration adds is emptied without a list to keep. */
+/**
+ * Read from the catalogue every time, so a table a migration adds is emptied without a list to
+ * keep. Only `public` so far: pg-boss's tables join when the queue is wired
+ * (docs/testing.md#environment), all but its `version` table: emptying that one uninstalls pg-boss.
+ */
 async function emptyEveryTable(url: string): Promise<void> {
   const client = new pg.Client({ connectionString: url });
   await client.connect();
