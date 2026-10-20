@@ -45,6 +45,42 @@ describe('scoreOutdoorSightseeing', () => {
     expect(score).toBe(0);
   });
 
+  it.each([
+    { change: '0.5 mm of precipitation', day: { precipitationMm: 0.5 }, score: 100 },
+    { change: '1.4 mm of precipitation', day: { precipitationMm: 1.4 }, score: 93 },
+    { change: '5 mm of precipitation', day: { precipitationMm: 5 }, score: 65 },
+    { change: '8 mm of precipitation', day: { precipitationMm: 8 }, score: 65 },
+    { change: 'a feel of -5 °C', day: { apparentTemperatureMaxC: -5 }, score: 75 },
+    { change: 'a feel of 0 °C', day: { apparentTemperatureMaxC: 0 }, score: 75 },
+    { change: 'a feel of 6 °C', day: { apparentTemperatureMaxC: 6 }, score: 85 },
+    { change: 'a feel of 15 °C', day: { apparentTemperatureMaxC: 15 }, score: 100 },
+    { change: 'a feel of 25 °C', day: { apparentTemperatureMaxC: 25 }, score: 100 },
+    { change: 'a feel of 31 °C', day: { apparentTemperatureMaxC: 31 }, score: 85 },
+    { change: 'a feel of 35 °C', day: { apparentTemperatureMaxC: 35 }, score: 75 },
+    { change: 'a feel of 40 °C', day: { apparentTemperatureMaxC: 40 }, score: 75 },
+    { change: 'no sunshine', day: { sunshineDurationH: 0 }, score: 80 },
+    { change: 'sunshine for 25% of daylight', day: { sunshineDurationH: 2.5 }, score: 90 },
+    { change: 'sunshine for 50% of daylight', day: { sunshineDurationH: 5 }, score: 100 },
+    { change: 'sunshine for 90% of daylight', day: { sunshineDurationH: 9 }, score: 100 },
+    { change: 'wind up to 20 km/h', day: { windSpeedMaxKmh: 20 }, score: 100 },
+    { change: 'wind up to 35 km/h', day: { windSpeedMaxKmh: 35 }, score: 95 },
+    { change: 'wind up to 50 km/h', day: { windSpeedMaxKmh: 50 }, score: 90 },
+    { change: 'wind up to 70 km/h', day: { windSpeedMaxKmh: 70 }, score: 90 },
+    { change: 'UV index 5', day: { uvIndexMax: 5 }, score: 100 },
+    { change: 'UV index 8', day: { uvIndexMax: 8 }, score: 95 },
+    { change: 'UV index 11', day: { uvIndexMax: 11 }, score: 90 },
+    { change: 'UV index 13', day: { uvIndexMax: 13 }, score: 90 },
+  ] as const)('scores $score on an otherwise ideal day with $change', ({ day, score }) => {
+    // Given
+    const changed = buildDay({ ...IDEAL, ...day });
+
+    // When
+    const scored = scoreOutdoorSightseeing(changed);
+
+    // Then
+    expect(scored.score).toBe(score);
+  });
+
   it.each([95, 96, 99] as const)(
     'caps the day at 10 in a thunderstorm (weather code %i)',
     (weatherCode) => {
