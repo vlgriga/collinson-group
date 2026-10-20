@@ -34,9 +34,10 @@ export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
   }
   // In descending weight, which the reasons fall back on when factors cost the same.
   const scored = [
-    score(factors.precipitation, precipitationMm, (mm) =>
-      mm === 0 ? 'No precipitation' : `${mm.toFixed(1)} mm of precipitation`,
-    ),
+    score(factors.precipitation, precipitationMm, (mm) => {
+      const shown = mm.toFixed(1);
+      return shown === '0.0' ? 'No precipitation' : `${shown} mm of precipitation`;
+    }),
     score(
       factors.apparentTemperature,
       day.apparentTemperatureMaxC,
@@ -72,8 +73,9 @@ function sunshineShare({ sunshineDurationH, daylightDurationH }: DailyWeather): 
   if (sunshineDurationH === null || daylightDurationH === null) {
     return null;
   }
-  // A polar night has no daylight to share, and no sun either.
-  return daylightDurationH > 0 ? sunshineDurationH / daylightDurationH : 0;
+  // A polar night has no daylight to share, and no sun either. The model's sunshine can run a
+  // little past its daylight; the day was sunny throughout, no more.
+  return daylightDurationH > 0 ? Math.min(sunshineDurationH / daylightDurationH, 1) : 0;
 }
 
 /** A missing factor is left out, and the weights of the others rescaled to add up to 1. */

@@ -197,6 +197,28 @@ describe('scoreOutdoorSightseeing', () => {
     expect(reasons).toEqual(['Feels like 0 °C', 'Sunshine 0% of daylight', 'Wind up to 35 km/h']);
   });
 
+  it('gives precipitation that rounds to nothing as none', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, precipitationMm: 0.03 });
+
+    // When
+    const { reasons } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(reasons).toContain('No precipitation');
+  });
+
+  it('gives sunshine beyond the daylight as 100% of it', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, sunshineDurationH: 10.3, daylightDurationH: 10 });
+
+    // When
+    const { reasons } = scoreOutdoorSightseeing(day);
+
+    // Then
+    expect(reasons).toContain('Sunshine 100% of daylight');
+  });
+
   it('gives a feel just below freezing as 0 °C, without a sign', () => {
     // Given
     const day = buildDay({ ...IDEAL, apparentTemperatureMaxC: -0.3 });
