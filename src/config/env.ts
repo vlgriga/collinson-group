@@ -9,18 +9,23 @@ const MAX_PORT = 65_535;
 
 const LOG_LEVEL = z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'off']);
 
+/** Digits only: Number() alone would also read `0x1F90`, `4e3` and ` 7 `. */
+function positiveWhole(max = Number.MAX_SAFE_INTEGER) {
+  return z
+    .string()
+    .regex(/^\d+$/, 'Expected a whole number')
+    .transform(Number)
+    .pipe(z.number().min(1).max(max));
+}
+
 const ENV = z
   .object({
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
-    PORT: z.coerce.number().int().min(1).max(MAX_PORT).default(DEFAULT_PORT),
+    PORT: positiveWhole(MAX_PORT).default(DEFAULT_PORT),
     LOG_TERMINAL_LEVEL: LOG_LEVEL.default('info'),
     LOG_FILE_LEVEL: LOG_LEVEL.default('info'),
     LOG_FILE_DIR: z.string().default('./logs'),
-    LOG_FILE_RETENTION_DAYS: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .default(DEFAULT_LOG_FILE_RETENTION_DAYS),
+    LOG_FILE_RETENTION_DAYS: positiveWhole().default(DEFAULT_LOG_FILE_RETENTION_DAYS),
     LOG_OTLP_LEVEL: LOG_LEVEL.default('off'),
     OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),
   })

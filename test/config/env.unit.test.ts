@@ -68,10 +68,13 @@ describe('parseEnv', () => {
     { variable: 'PORT', value: '65536' },
     { variable: 'PORT', value: '4000.5' },
     { variable: 'PORT', value: 'abc' },
+    { variable: 'PORT', value: '0x1F90' },
+    { variable: 'PORT', value: '4e3' },
     { variable: 'LOG_TERMINAL_LEVEL', value: 'verbose' },
     { variable: 'LOG_FILE_LEVEL', value: 'verbose' },
     { variable: 'LOG_FILE_RETENTION_DAYS', value: '0' },
     { variable: 'LOG_FILE_RETENTION_DAYS', value: '1.5' },
+    { variable: 'LOG_FILE_RETENTION_DAYS', value: ' 7 ' },
     { variable: 'LOG_OTLP_LEVEL', value: 'verbose' },
     { variable: 'OTEL_EXPORTER_OTLP_ENDPOINT', value: 'not a url' },
   ] as const)('refuses $variable=$value, naming the variable', ({ variable, value }) => {
