@@ -20,6 +20,9 @@ if (unleveled.length > 0) {
 export default defineConfig({
   test: {
     sequence: { shuffle: true },
+    // The root's global setup runs once per run and is not inherited by the projects, so one
+    // Postgres serves every level that is part of the run.
+    globalSetup: ['test/global-setup.ts'],
     // Reported, not gated (docs/testing.md#what-is-covered-where): `npm test -- --coverage`.
     coverage: { provider: 'v8', include: ['src/**'], exclude: ['src/graphql/generated/**'] },
     projects: LEVELS.map(({ name, suffix }) => ({

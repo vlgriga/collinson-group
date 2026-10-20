@@ -16,9 +16,10 @@ the ports. Each one:
 
 ## One composition, three users
 
-The wiring is one function shared by `api.ts`, `worker.ts` and the test app (`createTestApp`). The
-test app differs only in what it passes in: the Open-Meteo fake, a fixed clock, and configuration
-for tests. A module the composition does not wire is a module no test reaches.
+The wiring is one function, `createApp` in `src/app.ts`, shared by `api.ts`, `worker.ts` and the test
+app (`createTestApp`). The test app differs only in what it passes in: the Open-Meteo fake, a fixed
+clock, and configuration for tests. A module the composition does not wire is a module no test
+reaches.
 
 ## Rules
 

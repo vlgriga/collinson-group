@@ -90,7 +90,7 @@ checks the result and what is stored afterwards:
 describe('RankingService rank', () => {
   it('serves the stored forecast without calling Open-Meteo while it covers the week', async () => {
     // Given
-    const app = createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
     const chamonix = await storeLocation(app.db, buildLocation({ ...CHAMONIX, hasMarine: false }));
     await storeForecast(app.db, buildForecast({ location: chamonix, firstDate: '2026-10-18', fetchedAt: '2026-10-18T08:00:00Z' }));
 
@@ -276,10 +276,10 @@ the `Clock`, and retry delays come from configuration.
 - **Schema from migrations**, so tests also prove the migrations apply. `make gate` checks that
   `drizzle-kit generate` produces no new migration, which means schema and migrations agree.
 - **Isolation between tests** by truncating every table, pg-boss's included, before each test. The
-  clean database is something a test asks for (`const db = useDatabase()`), not something applied
-  to every file: asking is what grants storage access.
-- **The app is built per test** by `createTestApp`. It holds no state beyond the database, so
-  nothing leaks between tests and an override needs no restoring.
+  clean database is something a test asks for (`await useDatabase()`, which `createTestApp` calls),
+  not something applied to every file: asking is what grants storage access.
+- **The app is built per test** by `createTestApp`, and closed when the test ends. It holds no state
+  beyond the database, so nothing leaks between tests and an override needs no restoring.
 - **Resources** opened for setup or reading (pg-boss instances, extra connections) are closed in the
   same test with `await using` or `try/finally`.
 - **No global seeding.** Test data is created in the test through helpers named for what they make.
