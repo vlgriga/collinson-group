@@ -83,6 +83,25 @@ describe('activityRanking', () => {
     ]);
   });
 
+  it('scores as many days as asked for, and sums up the week over them alone', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix', days: 3 });
+
+    // Then
+    const [outdoor] = response.data?.activityRanking.activities ?? [];
+    const scores = outdoor?.days.map(({ score }) => score) ?? [];
+    // In the recording, the week's best day is the 7th and its mean differs from the 3 days'.
+    expect(outdoor).toEqual({
+      activity: 'OUTDOOR_SIGHTSEEING',
+      score: Math.round(scores.reduce((sum, score) => sum + score, 0) / 3),
+      bestDay: expect.toBeOneOf(WEEK.slice(0, 3)) as unknown,
+      days: WEEK.slice(0, 3).map((date) => expect.objectContaining({ date }) as unknown),
+    });
+  });
+
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });

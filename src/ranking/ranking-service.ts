@@ -13,6 +13,8 @@ export type RankingRequest = {
   city: string;
   /** ISO 3166-1 alpha-2; null when the match may be in any country. */
   countryCode: string | null;
+  /** How many days to score, today first. */
+  days: number;
 };
 
 export type Activity = 'OUTDOOR_SIGHTSEEING';
@@ -55,7 +57,8 @@ export class RankingService {
   async rank(request: RankingRequest): Promise<Ranking> {
     const location = await this.#locations.resolve(request);
     const week = localWeek(this.#clock.now(), location.timezone);
-    const days = await this.#forecasts.fetch(location, week);
+    // The whole week is fetched whatever is asked for (docs/design/activity-ranking.md).
+    const days = (await this.#forecasts.fetch(location, week)).slice(0, request.days);
     return {
       location,
       activities: [forecastActivity('OUTDOOR_SIGHTSEEING', days, scoreOutdoorSightseeing)],
