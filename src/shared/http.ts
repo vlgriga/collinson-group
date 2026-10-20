@@ -9,8 +9,9 @@ export type JsonResponse<T> = {
 };
 
 /**
- * GETs a JSON resource and checks it against `schema`. A request that fails, an error status, or
- * a body that is not JSON or not of the schema is an UpstreamUnavailableError.
+ * GETs a JSON resource and checks it against `schema`. A request that fails, a body that breaks
+ * off, an error status, or a body that is not JSON or not of the schema is an
+ * UpstreamUnavailableError.
  */
 export async function getJson<Schema extends z.ZodType>(
   url: URL,
@@ -21,14 +22,14 @@ export async function getJson<Schema extends z.ZodType>(
   const response = await fetch(url).catch((error: unknown) => {
     throw new UpstreamUnavailableError(`${upstream} could not be reached`, { cause: error });
   });
+  // Read whatever the status: a body left unread holds its connection until it is collected.
+  const body = await response.text().catch((error: unknown) => {
+    throw new UpstreamUnavailableError(`${upstream} broke off its answer`, { cause: error });
+  });
   if (!response.ok) {
     throw new UpstreamUnavailableError(`${upstream} answered ${String(response.status)}`);
   }
-  const payload: unknown = await response.json().catch((error: unknown) => {
-    throw new UpstreamUnavailableError(`${upstream} answered with a body that is not JSON`, {
-      cause: error,
-    });
-  });
+  const payload = parseJson(body, upstream);
   const result = schema.safeParse(payload);
   if (!result.success) {
     throw new UpstreamUnavailableError(`${upstream} answered in an unexpected shape`, {
@@ -36,4 +37,14 @@ export async function getJson<Schema extends z.ZodType>(
     });
   }
   return { payload, data: result.data };
+}
+
+function parseJson(body: string, upstream: string): unknown {
+  try {
+    return JSON.parse(body);
+  } catch (error) {
+    throw new UpstreamUnavailableError(`${upstream} answered with a body that is not JSON`, {
+      cause: error,
+    });
+  }
 }
