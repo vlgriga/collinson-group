@@ -64,6 +64,8 @@ describe('parseEnv', () => {
 
   it.each([
     { variable: 'DATABASE_URL', value: 'not a url' },
+    { variable: 'DATABASE_URL', value: 'postgres://' },
+    { variable: 'DATABASE_URL', value: 'postgres:activity' },
     { variable: 'PORT', value: '0' },
     { variable: 'PORT', value: '65536' },
     { variable: 'PORT', value: '4000.5' },
@@ -77,6 +79,7 @@ describe('parseEnv', () => {
     { variable: 'LOG_FILE_RETENTION_DAYS', value: ' 7 ' },
     { variable: 'LOG_OTLP_LEVEL', value: 'verbose' },
     { variable: 'OTEL_EXPORTER_OTLP_ENDPOINT', value: 'not a url' },
+    { variable: 'OTEL_EXPORTER_OTLP_ENDPOINT', value: 'localhost:4318' },
   ] as const)('refuses $variable=$value, naming the variable', ({ variable, value }) => {
     // Given
     const source = { DATABASE_URL, [variable]: value };

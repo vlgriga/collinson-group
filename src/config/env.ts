@@ -20,14 +20,15 @@ function positiveWhole(max = Number.MAX_SAFE_INTEGER) {
 
 const ENV = z
   .object({
-    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+    // A host is required: without one, pg would quietly fall back to localhost.
+    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/, hostname: /./ }),
     PORT: positiveWhole(MAX_PORT).default(DEFAULT_PORT),
     LOG_TERMINAL_LEVEL: LOG_LEVEL.default('info'),
     LOG_FILE_LEVEL: LOG_LEVEL.default('info'),
     LOG_FILE_DIR: z.string().default('./logs'),
     LOG_FILE_RETENTION_DAYS: positiveWhole().default(DEFAULT_LOG_FILE_RETENTION_DAYS),
     LOG_OTLP_LEVEL: LOG_LEVEL.default('off'),
-    OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
   })
   .refine((env) => env.LOG_OTLP_LEVEL === 'off' || env.OTEL_EXPORTER_OTLP_ENDPOINT !== undefined, {
     path: ['OTEL_EXPORTER_OTLP_ENDPOINT'],
