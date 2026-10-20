@@ -207,7 +207,7 @@ where the configuration lives are in [getting-started.md](getting-started.md).
 
 GitHub Actions on every PR and push to `main`: PR-title and branch-name check, then `npm ci` →
 `make gate`, the same check the pre-push hook runs: lint, format check, typecheck, every test level
-against Postgres in Testcontainers, build. Once the GraphQL schema exists, `codegen` runs first.
+against Postgres in Testcontainers, build.
 Branch protection on `main` is in [git-flow.md](git-flow.md#ready-to-merge).
 
 ## Definition of done
