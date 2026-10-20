@@ -17,12 +17,13 @@ Requirements: R9–R11, N2.
 
 ## Design
 
-- **Freshness.** Data is fresh while the latest successful `forecast_fetches` row for the
-  location is younger than the TTL (3 h by default).
+- **Freshness.** Data is fresh while the latest successful `FORECAST` fetch for the location is
+  younger than the TTL (3 h by default).
 - **Stale while revalidate.** A request that finds stale data answers with it, `stale: true`, and
-  enqueues a refresh. `stale: Boolean!` is added to `ActivityRanking` here; until then,
-  [activity ranking](activity-ranking.md) fetches only when the stored days do not cover the
-  request.
+  enqueues a refresh. `stale: Boolean!` is added to `ActivityRanking` here.
+- **Coverage still comes first.** Data that no longer covers the coming week is fetched inline,
+  as in [activity ranking](activity-ranking.md#request-flow), however fresh it is; the TTL decides
+  only between a fresh answer and a stale one.
 - **Requested places.** Each request sets `locations.last_requested_at`, which the background
   refresh selects on.
 - **One fetch per place.** The `fetch-forecast` job carries a singleton key per location, used by

@@ -7,7 +7,8 @@
 
 Open-Meteo is a free service outside our control. An outage on its side should not be an outage on
 ours while stored data exists, and every failure the client sees should be named. Requirements:
-R8 for "data temporarily missing", R12, R13 for `UPSTREAM_UNAVAILABLE`, N2.
+R8 for "data temporarily missing", R12, N2. R13 is met by [activity ranking](activity-ranking.md); here
+it narrows to "nothing stored".
 
 ## Goals and non-goals
 
@@ -20,7 +21,7 @@ R8 for "data temporarily missing", R12, R13 for `UPSTREAM_UNAVAILABLE`, N2.
 - **Upstream calls.** A 5 s timeout, 3 retries with exponential backoff and jitter on 5xx, 429 and
   network errors; no retry on 4xx. Every attempt is recorded in `forecast_fetches`.
 - **Partial failure.** If Marine fails and Forecast succeeds, surfing is unavailable with "marine
-  data temporarily unavailable", distinct from "no marine forecast (inland)". `has_marine` is set
+  data temporarily unavailable", distinct from "No marine forecast here". `has_marine` is set
   only on a confirmed empty response.
 - **Upstream down.** Stored data is served with `stale: true`; `UPSTREAM_UNAVAILABLE` only when
   nothing is stored.
