@@ -191,6 +191,28 @@ describe('scoreSkiing', () => {
     ]);
   });
 
+  it('gives snow just short of the skiable depth in whole cm short of it too', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, snowDepthMaxCm: 9.6 });
+
+    // When
+    const { reasons } = scoreSkiing(day);
+
+    // Then
+    expect(reasons).toContain('9 cm of snow on the ground');
+  });
+
+  it('gives gusts just over the cap in whole km/h over it too', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, windGustsMaxKmh: 60.3 });
+
+    // When
+    const { reasons } = scoreSkiing(day);
+
+    // Then
+    expect(reasons).toContain('Gusts up to 61 km/h');
+  });
+
   it('gives fresh snow that rounds to nothing as none', () => {
     // Given
     const day = buildDay({ ...IDEAL, snowfallCm: 0.3 });

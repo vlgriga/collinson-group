@@ -27,7 +27,8 @@ export function scoreSkiing(day: DailyWeather): DayScore {
       scoreFactor(
         factors.snowDepth,
         snowDepthMaxCm,
-        (cm) => `${cm.toFixed(0)} cm of snow on the ground`,
+        // Down, and gusts up, so that a reason never says what its cap rules out.
+        (cm) => `${String(Math.floor(cm))} cm of snow on the ground`,
       ),
       scoreFactor(factors.freshSnow, day.snowfallCm, (cm) => {
         const shown = cm.toFixed(0);
@@ -38,7 +39,11 @@ export function scoreSkiing(day: DailyWeather): DayScore {
         day.temperatureMaxC,
         (celsius) => `High of ${wholeDegrees(celsius)} °C`,
       ),
-      scoreFactor(factors.gusts, windGustsMaxKmh, (kmh) => `Gusts up to ${kmh.toFixed(0)} km/h`),
+      scoreFactor(
+        factors.gusts,
+        windGustsMaxKmh,
+        (kmh) => `Gusts up to ${String(Math.ceil(kmh))} km/h`,
+      ),
       scoreSunshine(factors.sunshine, day),
     ],
     applied,
