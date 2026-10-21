@@ -73,10 +73,11 @@ export class ForecastClient {
       data: { daily, hourly },
     } = await getJson(
       url,
-      // Other dates, such as a week without today just after midnight, would leave the week asked
-      // for short (ADR 0009).
+      // Other dates, for the days or for their hours, such as a week without today just after
+      // midnight, would leave the week asked for short (ADR 0009).
       RESPONSE.refine(
-        ({ daily: { time } }) => sameDates(time, dates),
+        ({ daily, hourly }) =>
+          sameDates(daily.time, dates) && sameDates(datesOf(hourly.time), dates),
         `Expected the dates asked for: ${dates.join(', ')}`,
       ),
     );
@@ -105,6 +106,11 @@ function aligned({
   ...series
 }: { time: readonly unknown[] } & Record<string, readonly unknown[]>): boolean {
   return Object.values(series).every((values) => values.length === time.length);
+}
+
+/** The dates the hours fall on, each once, in order. */
+function datesOf(times: readonly string[]): string[] {
+  return [...new Set(times.map((time) => time.slice(0, 'YYYY-MM-DD'.length)))];
 }
 
 function hours(seconds: number | null | undefined): number | null {

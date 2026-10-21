@@ -539,6 +539,11 @@ const UPSTREAM_FAILURES = [
     failing: 'a week without its last day',
     failure: { dates: { from: '2026-10-18', to: '2026-10-23' } },
   },
+  {
+    api: 'forecast',
+    failing: 'the hours of a week a day later than its days',
+    failure: { hourDates: { from: '2026-10-19', to: '2026-10-25' } },
+  },
 ] as const;
 
 const A_SCORE: unknown = expect.toSatisfy(

@@ -26,7 +26,9 @@ export type OpenMeteoFailure =
    * week without today, as a provider with no forecast for the place's today yet answers
    * (ADR 0009).
    */
-  | { dates: { from: string; to: string } };
+  | { dates: { from: string; to: string } }
+  /** The recorded forecast as asked, its hours those of the dates from `from` to `to` instead. */
+  | { hourDates: { from: string; to: string } };
 
 const GEOCODING = z.looseObject({
   results: z
@@ -85,7 +87,7 @@ export class OpenMeteoFake {
       this.#answer('geocoding', request, (url) => this.#geocode(url)),
     ),
     http.get(ENDPOINTS.forecast, ({ request }) =>
-      this.#answer('forecast', request, (url) => this.#forecast(url)),
+      this.#answer('forecast', request, (url, hoursUrl) => this.#forecast(url, hoursUrl)),
     ),
   );
 
@@ -107,7 +109,11 @@ export class OpenMeteoFake {
     return this.requests.filter((url) => `${url.origin}${url.pathname}` === ENDPOINTS[api]);
   }
 
-  #answer(api: OpenMeteoApi, request: Request, answer: (url: URL) => JsonBodyType): Response {
+  #answer(
+    api: OpenMeteoApi,
+    request: Request,
+    answer: (url: URL, hoursUrl?: URL) => JsonBodyType,
+  ): Response {
     const url = new URL(request.url);
     this.requests.push(url);
     const failure = this.#failures.get(api);
@@ -119,6 +125,9 @@ export class OpenMeteoFake {
     }
     if ('dates' in failure) {
       return HttpResponse.json(answer(askingFor(url, failure.dates)));
+    }
+    if ('hourDates' in failure) {
+      return HttpResponse.json(answer(url, askingFor(url, failure.hourDates)));
     }
     if ('status' in failure) {
       // The shape Open-Meteo gives its own errors.
@@ -143,8 +152,11 @@ export class OpenMeteoFake {
     return search?.geocoding ?? { generationtime_ms: 0.1 };
   }
 
-  /** The recorded days and their hours, dated from `start_date` to `end_date` as asked (ADR 0009). */
-  #forecast(url: URL): JsonBodyType {
+  /**
+   * The recorded days and their hours, dated from `start_date` to `end_date` as asked (ADR 0009);
+   * the hours as `hoursUrl` asks, when it is given.
+   */
+  #forecast(url: URL, hoursUrl: URL = url): JsonBodyType {
     const place = this.#forecasts.find(
       ({ latitude, longitude }) =>
         latitude === Number(url.searchParams.get('latitude')) &&
@@ -162,8 +174,9 @@ export class OpenMeteoFake {
       ]),
     );
     // Each hour of a recorded day keeps its time of day, on the date that takes the day's place.
+    const hourDates = datesBetween(param(hoursUrl, 'start_date'), param(hoursUrl, 'end_date'));
     const dateFor = new Map(
-      daily.time.slice(0, dates.length).map((date, day) => [date, dates[day]]),
+      daily.time.slice(0, hourDates.length).map((date, day) => [date, hourDates[day]]),
     );
     const hours = hourly.time.flatMap((time, hour) => {
       const [date = '', timeOfDay = ''] = time.split('T');
