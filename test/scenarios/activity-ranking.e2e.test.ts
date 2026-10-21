@@ -358,6 +358,61 @@ describe('activityRanking', () => {
       '/v1/forecast',
     ]);
   });
+
+  it.each([{ days: 7 }, { days: 1 }] as const)(
+    'fetches the week from the new today once the stored one is a day short, asked for days: $days',
+    async ({ days }) => {
+      // Given
+      const clock = fixedClock('2026-10-18T09:00:00Z');
+      const app = await createTestApp({ clock });
+      await requestActivityRanking(app, { city: 'Chamonix' });
+      clock.advanceTo('2026-10-19T09:00:00Z');
+
+      // When
+      await requestActivityRanking(app, { city: 'Chamonix', days });
+
+      // Then
+      expect(
+        app.openMeteo
+          .requestsTo('forecast')
+          .map(({ searchParams }) => searchParams.get('start_date')),
+      ).toEqual(['2026-10-18', '2026-10-19']);
+    },
+  );
+
+  it('keeps one row per date when the week fetched again overlaps the stored one', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-19T09:00:00Z');
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect((await readDailyWeather(app.db)).map(({ date }) => date)).toEqual([
+      ...WEEK,
+      '2026-10-25',
+    ]);
+  });
+
+  it('overwrites the overlapping days with the week fetched again', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-19T09:00:00Z');
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    const overlapping = (await readDailyWeather(app.db)).find(({ date }) => date === '2026-10-19');
+    // The fake dates the recording from the first date asked for: 20.9 mm on the second date of
+    // the first fetch, 3.1 mm on the first date of the second.
+    expect(overlapping?.precipitationMm).toBe(3.1);
+  });
 });
 
 const WEEK = [
