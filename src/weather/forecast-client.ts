@@ -2,12 +2,15 @@ import { z } from 'zod';
 
 import type { DailyWeather, Location } from '../ranking/index.js';
 import { getJson, sameDates, type LocalDate } from '../shared/index.js';
+import { dailyMaxima } from './daily-maxima.js';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 
 const SECONDS_PER_HOUR = 3600;
 
-/** A value per date; a single one may be missing. */
+const CM_PER_M = 100;
+
+/** A value per date, or per hour; a single one may be missing. */
 const SERIES = z.array(z.number().nullable());
 
 const DAILY = z.object({
@@ -22,14 +25,19 @@ const DAILY = z.object({
   weather_code: z.array(z.int().nullable()),
 });
 
+const HOURLY = z.object({
+  // Local times of the place's calendar, such as 2026-10-18T09:00.
+  time: z.array(z.iso.datetime({ local: true })),
+  snow_depth: SERIES,
+});
+
 // Asked for by the names the response is checked against, so the two cannot drift apart.
 const DAILY_VARIABLES = Object.keys(DAILY.shape).filter((key) => key !== 'time');
+const HOURLY_VARIABLES = Object.keys(HOURLY.shape).filter((key) => key !== 'time');
 
 const RESPONSE = z.object({
-  daily: DAILY.refine(
-    ({ time, ...series }) => Object.values(series).every((values) => values.length === time.length),
-    'Every daily variable has one value per date',
-  ),
+  daily: DAILY.refine(aligned, 'Every daily variable has one value per date'),
+  hourly: HOURLY.refine(aligned, 'Every hourly variable has one value per hour'),
 });
 
 export type Forecast = {
@@ -51,13 +59,14 @@ export class ForecastClient {
       latitude: String(location.latitude),
       longitude: String(location.longitude),
       daily: DAILY_VARIABLES.join(','),
+      hourly: HOURLY_VARIABLES.join(','),
       timezone: location.timezone,
       start_date: first,
       end_date: last,
     }).toString();
     const {
       payload,
-      data: { daily },
+      data: { daily, hourly },
     } = await getJson(
       url,
       // Other dates, such as a week without today just after midnight, would leave the week asked
@@ -67,6 +76,7 @@ export class ForecastClient {
         `Expected the dates asked for: ${dates.join(', ')}`,
       ),
     );
+    const snowDepthsM = dailyMaxima(daily.time, { time: hourly.time, values: hourly.snow_depth });
     const days = daily.time.map((date, day) => ({
       date,
       precipitationMm: daily.precipitation_sum[day] ?? null,
@@ -76,11 +86,24 @@ export class ForecastClient {
       windSpeedMaxKmh: daily.wind_speed_10m_max[day] ?? null,
       uvIndexMax: daily.uv_index_max[day] ?? null,
       weatherCode: daily.weather_code[day] ?? null,
+      snowDepthMaxCm: centimetres(snowDepthsM[day]),
     }));
     return { days, payload };
   }
 }
 
+/** Whether every variable has one value per time. */
+function aligned({
+  time,
+  ...series
+}: { time: readonly unknown[] } & Record<string, readonly unknown[]>): boolean {
+  return Object.values(series).every((values) => values.length === time.length);
+}
+
 function hours(seconds: number | null | undefined): number | null {
   return seconds == null ? null : seconds / SECONDS_PER_HOUR;
+}
+
+function centimetres(metres: number | null | undefined): number | null {
+  return metres == null ? null : metres * CM_PER_M;
 }

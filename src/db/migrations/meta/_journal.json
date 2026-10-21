@@ -15,6 +15,13 @@
       "when": 1792526699259,
       "tag": "0001_location_aliases",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792566240877,
+      "tag": "0002_skiing_weather",
+      "breakpoints": true
     }
   ]
 }

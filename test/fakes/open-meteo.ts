@@ -33,7 +33,11 @@ const GEOCODING = z.looseObject({
     .tuple([z.looseObject({ latitude: z.number(), longitude: z.number() })])
     .rest(z.unknown()),
 });
-const FORECAST = z.looseObject({ daily: z.record(z.string(), z.array(z.unknown())) });
+/** Variables of one time step, each a value per `time`. */
+const SERIES = z
+  .record(z.string(), z.array(z.unknown()))
+  .and(z.object({ time: z.array(z.string()) }));
+const FORECAST = z.looseObject({ daily: SERIES, hourly: SERIES });
 
 type Search = {
   /** Lower-cased: Open-Meteo matches a name without regard to case. */
@@ -139,7 +143,7 @@ export class OpenMeteoFake {
     return search?.geocoding ?? { generationtime_ms: 0.1 };
   }
 
-  /** The recorded days, dated from `start_date` to `end_date` as asked (ADR 0009). */
+  /** The recorded days and their hours, dated from `start_date` to `end_date` as asked (ADR 0009). */
   #forecast(url: URL): JsonBodyType {
     const place = this.#forecasts.find(
       ({ latitude, longitude }) =>
@@ -150,18 +154,29 @@ export class OpenMeteoFake {
       throw new Error(`No recorded forecast for ${url.search}`);
     }
     const dates = datesBetween(param(url, 'start_date'), param(url, 'end_date'));
-    const { daily, ...rest } = place.forecast;
+    const { daily, hourly, ...rest } = place.forecast;
     const rebased = Object.fromEntries(
       Object.entries(daily).map(([key, values]) => [
         key,
         key === 'time' ? dates : values.slice(0, dates.length),
       ]),
     );
-    // The recorded hours keep the recording's dates; nothing asks for them yet.
-    const dailyOnly = Object.fromEntries(
-      Object.entries(rest).filter(([key]) => !key.startsWith('hourly')),
+    // Each hour of a recorded day keeps its time of day, on the date that takes the day's place.
+    const dateFor = new Map(
+      daily.time.slice(0, dates.length).map((date, day) => [date, dates[day]]),
     );
-    return { ...dailyOnly, daily: rebased };
+    const hours = hourly.time.flatMap((time, hour) => {
+      const [date = '', timeOfDay = ''] = time.split('T');
+      const asked = dateFor.get(date);
+      return asked === undefined ? [] : [{ hour, time: `${asked}T${timeOfDay}` }];
+    });
+    const rebasedHours = Object.fromEntries(
+      Object.entries(hourly).map(([key, values]) => [
+        key,
+        key === 'time' ? hours.map(({ time }) => time) : hours.map(({ hour }) => values[hour]),
+      ]),
+    );
+    return { ...rest, daily: rebased, hourly: rebasedHours };
   }
 }
 

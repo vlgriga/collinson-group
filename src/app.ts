@@ -13,6 +13,8 @@ export type AppDependencies = {
 export type App = {
   clock: Clock;
   db: Database;
+  /** The use case behind the API, for the tests that enter below it. */
+  ranking: RankingService;
   /** The GraphQL API: api.ts serves it over HTTP, tests call its `fetch`. */
   yoga: GraphqlServer;
   /** Releases what the app holds open; the caller stops taking work first. */
@@ -36,5 +38,5 @@ export function createApp({ env, clock }: AppDependencies): App {
     clock,
   });
   const ranking = new RankingService({ locations, storedForecasts, forecasts, clock });
-  return { clock, db, yoga: createGraphqlServer(ranking), close };
+  return { clock, db, ranking, yoga: createGraphqlServer(ranking), close };
 }

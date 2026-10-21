@@ -70,6 +70,7 @@ export const dailyWeather = pgTable(
     windSpeedMaxKmh: doublePrecision('wind_speed_max_kmh'),
     uvIndexMax: doublePrecision('uv_index_max'),
     weatherCode: integer('weather_code'),
+    snowDepthMaxCm: doublePrecision('snow_depth_max_cm'),
     ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.locationId, table.date] })],

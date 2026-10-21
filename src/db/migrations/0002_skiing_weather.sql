@@ -1,0 +1,1 @@
+ALTER TABLE "daily_weather" ADD COLUMN "snow_depth_max_cm" double precision;

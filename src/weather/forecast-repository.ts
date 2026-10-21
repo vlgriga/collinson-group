@@ -14,6 +14,7 @@ const DAY_VALUES = {
   windSpeedMaxKmh: dailyWeather.windSpeedMaxKmh,
   uvIndexMax: dailyWeather.uvIndexMax,
   weatherCode: dailyWeather.weatherCode,
+  snowDepthMaxCm: dailyWeather.snowDepthMaxCm,
 };
 
 /** The columns a DailyWeather is read from. */
@@ -81,6 +82,7 @@ export class ForecastRepository implements ForecastReader {
             windSpeedMaxKmh: excluded(dailyWeather.windSpeedMaxKmh),
             uvIndexMax: excluded(dailyWeather.uvIndexMax),
             weatherCode: excluded(dailyWeather.weatherCode),
+            snowDepthMaxCm: excluded(dailyWeather.snowDepthMaxCm),
             updatedAt: sql`now()`,
           } satisfies Record<keyof typeof DAY_VALUES | 'updatedAt', SQL>,
         });
