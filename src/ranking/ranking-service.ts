@@ -84,9 +84,19 @@ export class RankingService {
    */
   async #forecastFor(location: Location, week: readonly LocalDate[]): Promise<StoredForecast> {
     const stored = await this.#storedForecasts.read(location, week);
-    // One day per date of the week at most, so as many as the week is all of it.
-    return stored?.days.length === week.length ? stored : this.#forecasts.fetch(location, week);
+    return coversWeek(stored, week) ? stored : this.#forecasts.fetch(location, week);
   }
+}
+
+/** Whether `forecast` holds a day for each date of `week`, and no other. */
+function coversWeek(
+  forecast: StoredForecast | undefined,
+  week: readonly LocalDate[],
+): forecast is StoredForecast {
+  return (
+    forecast?.days.length === week.length &&
+    forecast.days.every(({ date }, day) => date === week[day])
+  );
 }
 
 function forecastActivity(

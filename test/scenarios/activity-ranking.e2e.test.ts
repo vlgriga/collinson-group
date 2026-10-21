@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { createTestApp } from '../app.js';
 import { fixedClock } from '../fakes/clock.js';
 import { readLocationAliases, readLocations } from '../locations/factories/location.js';
-import { readDailyWeather, readForecastFetches } from '../weather/factories/forecast.js';
+import {
+  readDailyWeather,
+  readForecastFetches,
+  storeDayMissing,
+} from '../weather/factories/forecast.js';
 import { requestActivityRanking } from './support.js';
 
 describe('activityRanking', () => {
@@ -361,14 +365,18 @@ describe('activityRanking', () => {
     // Given
     const clock = fixedClock('2026-10-18T09:00:00Z');
     const app = await createTestApp({ clock });
-    await requestActivityRanking(app, { city: 'Chamonix' });
+    const first = await requestActivityRanking(app, { city: 'Chamonix' });
     clock.advanceTo('2026-10-18T15:00:00Z');
 
     // When
     const response = await requestActivityRanking(app, { city: 'Chamonix' });
 
     // Then
-    expect(response.data?.activityRanking.activities).toHaveLength(1);
+    expect(response.errors).toBeUndefined();
+    // The stored days score as the fetched ones did.
+    expect(response.data?.activityRanking.activities).toEqual(
+      first.data?.activityRanking.activities,
+    );
     // The first request's geocoding and forecast, and nothing since.
     expect(app.openMeteo.requests.map(({ pathname }) => pathname)).toEqual([
       '/v1/search',
@@ -396,6 +404,19 @@ describe('activityRanking', () => {
       ).toEqual(['2026-10-18', '2026-10-19']);
     },
   );
+
+  it('fetches the week again when a day in the middle of the stored one is missing', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    await storeDayMissing(app.db, '2026-10-21');
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(app.openMeteo.requestsTo('forecast')).toHaveLength(2);
+  });
 
   it('keeps one row per date when the week fetched again overlaps the stored one', async () => {
     // Given
