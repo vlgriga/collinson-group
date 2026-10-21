@@ -1,9 +1,16 @@
 import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
-import { dailyWeather, forecastFetches, type Database } from '../db/index.js';
+import {
+  dailyMarine,
+  dailyWeather,
+  forecastFetches,
+  locations,
+  type Database,
+} from '../db/index.js';
 import type { DailyWeather, ForecastReader, Location, StoredForecast } from '../ranking/index.js';
 import type { LocalDate } from '../shared/index.js';
+import type { Marine } from './marine-client.js';
 
 /** The columns of a DailyWeather's values, all but the date that keys them. */
 const DAY_VALUES = {
@@ -27,6 +34,8 @@ export type ForecastFetch = {
   locationId: string;
   days: readonly DailyWeather[];
   payload: unknown;
+  /** What Marine answered for the same dates. */
+  marine: Marine;
   fetchedAt: Date;
 };
 
@@ -66,10 +75,11 @@ export class ForecastRepository implements ForecastReader {
   }
 
   /**
-   * The days and the fetch they came from, together or not at all. A day already stored takes
-   * the newer values (ADR 0005).
+   * The days, the sea's and the fetches they came from, together or not at all; and whether the
+   * place has a sea, as Marine has just answered. A day already stored takes the newer values
+   * (ADR 0005).
    */
-  async saveFetch({ locationId, days, payload, fetchedAt }: ForecastFetch): Promise<void> {
+  async saveFetch({ locationId, days, payload, marine, fetchedAt }: ForecastFetch): Promise<void> {
     await this.#db.transaction(async (tx) => {
       await tx
         .insert(dailyWeather)
@@ -99,6 +109,30 @@ export class ForecastRepository implements ForecastReader {
         fetchedAt,
         rawPayload: payload,
       });
+      if (marine.days !== null) {
+        await tx
+          .insert(dailyMarine)
+          .values(marine.days.map((day) => ({ locationId, ...day })))
+          .onConflictDoUpdate({
+            target: [dailyMarine.locationId, dailyMarine.date],
+            set: {
+              waveHeightMaxM: excluded(dailyMarine.waveHeightMaxM),
+              swellWavePeriodMaxS: excluded(dailyMarine.swellWavePeriodMaxS),
+              updatedAt: sql`now()`,
+            },
+          });
+      }
+      await tx.insert(forecastFetches).values({
+        locationId,
+        source: 'MARINE',
+        status: 'SUCCEEDED',
+        fetchedAt,
+        rawPayload: marine.payload,
+      });
+      await tx
+        .update(locations)
+        .set({ hasMarine: marine.days !== null, updatedAt: sql`now()` })
+        .where(eq(locations.id, locationId));
     });
   }
 }

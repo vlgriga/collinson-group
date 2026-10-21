@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { DailyWeather, Location } from '../ranking/index.js';
 import { getJson, sameDates, type LocalDate } from '../shared/index.js';
 import { dailyMaxima, dateOf } from './daily-maxima.js';
+import { aligned, DATES, SERIES, urlFor } from './open-meteo.js';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 
@@ -10,12 +11,8 @@ const SECONDS_PER_HOUR = 3600;
 
 const CM_PER_M = 100;
 
-/** A value per date, or per hour; a single one may be missing. */
-const SERIES = z.array(z.number().nullable());
-
 const DAILY = z.object({
-  // Validated, then trusted as a date of the place's calendar (ADR 0009).
-  time: z.array(z.iso.date().transform((date) => date as LocalDate)),
+  time: DATES,
   precipitation_sum: SERIES,
   apparent_temperature_max: SERIES,
   sunshine_duration: SERIES,
@@ -53,21 +50,10 @@ export type Forecast = {
 /** Open-Meteo Forecast: a place's daily weather, converted to the units its names carry. */
 export class ForecastClient {
   async daily(location: Location, dates: readonly LocalDate[]): Promise<Forecast> {
-    const [first] = dates;
-    const last = dates.at(-1);
-    if (first === undefined || last === undefined) {
-      throw new Error('A forecast is asked for at least one date');
-    }
-    const url = new URL(FORECAST_URL);
-    url.search = new URLSearchParams({
-      latitude: String(location.latitude),
-      longitude: String(location.longitude),
+    const url = urlFor(FORECAST_URL, location, dates, {
       daily: DAILY_VARIABLES.join(','),
       hourly: HOURLY_VARIABLES.join(','),
-      timezone: location.timezone,
-      start_date: first,
-      end_date: last,
-    }).toString();
+    });
     const {
       payload,
       data: { daily, hourly },
@@ -98,14 +84,6 @@ export class ForecastClient {
     }));
     return { days, payload };
   }
-}
-
-/** Whether every variable has one value per time. */
-function aligned({
-  time,
-  ...series
-}: { time: readonly unknown[] } & Record<string, readonly unknown[]>): boolean {
-  return Object.values(series).every((values) => values.length === time.length);
 }
 
 /** The dates the hours fall on, each once, in order. */

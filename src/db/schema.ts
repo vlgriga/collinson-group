@@ -1,6 +1,7 @@
 // The tables, as docs/design/activity-ranking.md#data-model lays them out; `make migration`
 // turns a change here into SQL.
 import {
+  boolean,
   date,
   doublePrecision,
   index,
@@ -32,6 +33,8 @@ export const locations = pgTable('locations', {
   longitude: doublePrecision('longitude').notNull(),
   elevationM: doublePrecision('elevation_m'),
   timezone: text('timezone').notNull(),
+  /** Whether Marine forecasts a sea here; null until it is first asked. */
+  hasMarine: boolean('has_marine'),
   ...timestamps,
 });
 
@@ -79,6 +82,24 @@ export const dailyWeather = pgTable(
   (table) => [primaryKey({ columns: [table.locationId, table.date] })],
 );
 
+/**
+ * One row per place with a sea and date of its calendar, overwritten by each fetch (ADR 0005); a
+ * place without a sea has none.
+ */
+export const dailyMarine = pgTable(
+  'daily_marine',
+  {
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    date: date('date', { mode: 'string' }).$type<LocalDate>().notNull(),
+    waveHeightMaxM: doublePrecision('wave_height_max_m'),
+    swellWavePeriodMaxS: doublePrecision('swell_wave_period_max_s'),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.locationId, table.date] })],
+);
+
 /** Every fetch from Open-Meteo, with what it answered. */
 export const forecastFetches = pgTable(
   'forecast_fetches',
@@ -87,7 +108,7 @@ export const forecastFetches = pgTable(
     locationId: uuid('location_id')
       .notNull()
       .references(() => locations.id, { onDelete: 'cascade' }),
-    source: text('source', { enum: ['FORECAST'] }).notNull(),
+    source: text('source', { enum: ['FORECAST', 'MARINE'] }).notNull(),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
     status: text('status', { enum: ['SUCCEEDED'] }).notNull(),
     rawPayload: jsonb('raw_payload').notNull(),

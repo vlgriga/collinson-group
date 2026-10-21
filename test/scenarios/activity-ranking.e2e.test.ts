@@ -257,22 +257,25 @@ describe('activityRanking', () => {
     },
   );
 
-  it("asks for the forecast of the week as dates in the place's timezone", async () => {
-    // Given
-    // 22:00 on 17 October in Paris, Texas, five hours behind.
-    const app = await createTestApp({ clock: fixedClock('2026-10-18T03:00:00Z') });
+  it.each(['forecast', 'marine'] as const)(
+    "asks %s for the week as dates in the place's timezone",
+    async (api) => {
+      // Given
+      // 22:00 on 17 October in Paris, Texas, five hours behind.
+      const app = await createTestApp({ clock: fixedClock('2026-10-18T03:00:00Z') });
 
-    // When
-    await requestActivityRanking(app, { city: 'Paris', countryCode: 'US' });
+      // When
+      await requestActivityRanking(app, { city: 'Paris', countryCode: 'US' });
 
-    // Then
-    const [forecast] = app.openMeteo.requestsTo('forecast');
-    expect({
-      timezone: forecast?.searchParams.get('timezone'),
-      startDate: forecast?.searchParams.get('start_date'),
-      endDate: forecast?.searchParams.get('end_date'),
-    }).toEqual({ timezone: 'America/Chicago', startDate: '2026-10-17', endDate: '2026-10-23' });
-  });
+      // Then
+      const [request] = app.openMeteo.requestsTo(api);
+      expect({
+        timezone: request?.searchParams.get('timezone'),
+        startDate: request?.searchParams.get('start_date'),
+        endDate: request?.searchParams.get('end_date'),
+      }).toEqual({ timezone: 'America/Chicago', startDate: '2026-10-17', endDate: '2026-10-23' });
+    },
+  );
 
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
@@ -290,7 +293,8 @@ describe('activityRanking', () => {
     expect(await readDailyWeather(app.db)).toEqual(
       WEEK.map((date) => expect.objectContaining({ locationId: chamonix?.id, date }) as unknown),
     );
-    expect(await readForecastFetches(app.db)).toEqual([
+    const fetches = await readForecastFetches(app.db);
+    expect(fetches.filter(({ source }) => source === 'FORECAST')).toEqual([
       expect.objectContaining({
         locationId: chamonix?.id,
         source: 'FORECAST',
@@ -399,10 +403,12 @@ describe('activityRanking', () => {
     expect(response.data?.activityRanking.activities).toEqual(
       first.data?.activityRanking.activities,
     );
-    // The first request's geocoding and forecast, and nothing since.
-    expect(app.openMeteo.requests.map(({ pathname }) => pathname)).toEqual([
-      '/v1/search',
+    // The first request's geocoding, forecast and marine forecast, and nothing since; the last two
+    // are asked at once, in no set order.
+    expect(app.openMeteo.requests.map(({ pathname }) => pathname).toSorted()).toEqual([
       '/v1/forecast',
+      '/v1/marine',
+      '/v1/search',
     ]);
   });
 
@@ -564,6 +570,18 @@ const UPSTREAM_FAILURES = [
     api: 'forecast',
     failing: 'the hours of a week a day later than its days',
     failure: { hourDates: { from: '2026-10-19', to: '2026-10-25' } },
+  },
+  { api: 'marine', failing: 'an error status', failure: { status: 500 } },
+  { api: 'marine', failing: 'a broken connection', failure: 'broken connection' },
+  {
+    api: 'marine',
+    failing: 'a response that fails validation',
+    failure: { body: { daily: { time: ['2026-10-18'] } } },
+  },
+  {
+    api: 'marine',
+    failing: 'a week a day later than asked',
+    failure: { dates: { from: '2026-10-19', to: '2026-10-25' } },
   },
 ] as const;
 

@@ -1,7 +1,7 @@
 /**
  * The Geocoding searches the recordings here answer, and the name their files are kept under:
  * scripts/record-fixtures.ts records them, the Open-Meteo fake serves them. A search with
- * `forecast: false` finds a place another search has the forecast of.
+ * `forecast: false` finds a place another search has the forecast and the marine forecast of.
  */
 export const SEARCHES: readonly {
   name: string;
@@ -19,4 +19,6 @@ export const SEARCHES: readonly {
   { name: 'Paris', countryCode: 'US', file: 'paris-us' },
   // A ski resort with snow on the ground that changes within a day.
   { name: 'Val Thorens', file: 'val-thorens' },
+  // A surf town on the Atlantic: Marine forecasts its sea, where the others have none.
+  { name: 'Biarritz', file: 'biarritz' },
 ];
