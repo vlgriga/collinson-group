@@ -231,6 +231,23 @@ describe('activityRanking', () => {
     },
   );
 
+  it("asks for the forecast of the week as dates in the place's timezone", async () => {
+    // Given
+    // 22:00 on 17 October in Paris, Texas, five hours behind.
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T03:00:00Z') });
+
+    // When
+    await requestActivityRanking(app, { city: 'Paris', countryCode: 'US' });
+
+    // Then
+    const [forecast] = app.openMeteo.requestsTo('forecast');
+    expect({
+      timezone: forecast?.searchParams.get('timezone'),
+      startDate: forecast?.searchParams.get('start_date'),
+      endDate: forecast?.searchParams.get('end_date'),
+    }).toEqual({ timezone: 'America/Chicago', startDate: '2026-10-17', endDate: '2026-10-23' });
+  });
+
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
