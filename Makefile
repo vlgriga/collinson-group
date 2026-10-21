@@ -39,7 +39,7 @@ codegen: ## Regenerate the resolver types from schema.graphql
 dev-api: ## Run the API in watch mode on http://localhost:4000/graphql
 	npm run dev:api
 
-dev-worker: ## Run the worker in watch mode
+dev-worker: ## Run the worker in watch mode, once Refresh is built
 	npm run dev:worker
 
 ## Checks

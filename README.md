@@ -103,12 +103,13 @@ asked for as explicit dates in the place's timezone, so "today" and the stored d
 calendar ([ADR 0009](docs/decisions/0009-forecast-week-in-the-location-timezone.md)). The raw
 answers allow re-extraction if a column is added.
 
-**Refresh, as built: read-through by the day.** A request is answered from Postgres while the stored
-days cover today and the next six; when they don't, that week is fetched inline, upserted and
-answered. Forecast and Marine are fetched on a place's first request, after its name is geocoded,
-and after that about once a day per place that is still asked about, at its local midnight. A repeated request does not reach
-Open-Meteo: locally, around 10 ms against about a second for a cold one. The cost is that a stored
-forecast can be up to a day old.
+**Refresh, as built: read-through by the day.** A request is answered from Postgres while the
+stored days cover today and the next six; when they don't, that week is fetched inline, upserted
+and answered. The week is fetched on a place's first request, and again on the first request after
+its local midnight; there is no scheduled fetch, so a place nobody asks about is not fetched again.
+Marine is not asked again where it found no sea. A repeated request for a name already asked for
+does not reach Open-Meteo: locally, around 10 ms against about a second for a cold one. The cost is
+that a stored forecast can be up to a day old.
 
 **Refresh, as designed: hybrid** ([ADR 0002](docs/decisions/0002-hybrid-refresh-strategy.md),
 [design](docs/design/refresh.md)):
@@ -146,9 +147,9 @@ resort's; a place on the coast can fall outside Marine's grid.
   `ranking → scoring`, where `scoring` is pure functions and `ranking` reaches I/O only through
   ports ([architecture](docs/architecture/)).
 - **Tests at three levels**, against a real Postgres in Testcontainers: unit tests for the scorers
-  and other pure code, integration tests for ingest and the repositories, and end-to-end scenarios
-  through the GraphQL endpoint. Only Open-Meteo and the clock are replaced, Open-Meteo by a fake
-  that replays recorded answers; nothing of ours is mocked ([testing](docs/testing.md)).
+  and other pure code, integration tests for ingest and the forecast repository, and end-to-end
+  scenarios through the GraphQL endpoint. Only Open-Meteo and the clock are replaced, Open-Meteo by
+  a fake that replays recorded answers; nothing of ours is mocked ([testing](docs/testing.md)).
 - **A planned, reviewed flow:** requirements, a design doc per feature, one issue and one pull
   request per step, and CI running the same gate as the pre-push hook
   ([workflow](docs/workflow-lifecycle.md), [board](https://github.com/users/vlgriga/projects/2)).
