@@ -3,7 +3,7 @@ import type { Factor } from '../config/index.js';
 import { onCurve } from './curve.js';
 import type { DailyWeather, DayScore } from './daily-weather.js';
 
-export const MAX_SCORE = 100;
+const MAX_SCORE = 100;
 
 /** Enough to explain a score without listing every factor. */
 const REASON_COUNT = 3;
@@ -25,10 +25,22 @@ export function scoreFactor(
     : { weight: factor.weight, subScore: onCurve(factor.curve, value), reason: describe(value) };
 }
 
-export function sunshineShare({
-  sunshineDurationH,
-  daylightDurationH,
-}: DailyWeather): number | null {
+/** The share of the day's daylight with sunshine, on the factor's curve. */
+export function scoreSunshine(factor: Factor, day: DailyWeather): Scored | undefined {
+  return scoreFactor(
+    factor,
+    sunshineShare(day),
+    (share) => `Sunshine ${(share * MAX_SCORE).toFixed(0)}% of daylight`,
+  );
+}
+
+/** Whole degrees, as a reason gives them. */
+export function wholeDegrees(celsius: number): string {
+  // Just below freezing rounds to -0, which would print with its sign.
+  return String(Math.round(celsius) || 0);
+}
+
+function sunshineShare({ sunshineDurationH, daylightDurationH }: DailyWeather): number | null {
   if (sunshineDurationH === null || daylightDurationH === null) {
     return null;
   }

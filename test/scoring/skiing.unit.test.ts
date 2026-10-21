@@ -130,6 +130,89 @@ describe('scoreSkiing', () => {
     ]);
   });
 
+  it.each([
+    { field: 'snowDepthMaxCm', reason: 'Snow depth missing from the forecast' },
+    { field: 'windGustsMaxKmh', reason: 'Wind gusts missing from the forecast' },
+  ] as const)('scores 0 when a cap needs the missing $field, naming it', ({ field, reason }) => {
+    // Given
+    const day = buildDay({ ...IDEAL, [field]: null });
+
+    // When
+    const scored = scoreSkiing(day);
+
+    // Then
+    expect(scored).toEqual({ score: 0, reasons: [reason] });
+  });
+
+  it.each([
+    { field: 'snowfallCm', score: 75 },
+    { field: 'temperatureMaxC', score: 76 },
+    { field: 'sunshineDurationH', score: 78 },
+    { field: 'daylightDurationH', score: 78 },
+  ] as const)('leaves out a missing $field and rescales the other weights', ({ field, score }) => {
+    // Given a day of 80 with every factor: half the snow depth's points are lost
+    const day = buildDay({ ...IDEAL, snowDepthMaxCm: 55, [field]: null });
+
+    // When
+    const scored = scoreSkiing(day);
+
+    // Then
+    expect(scored.score).toBe(score);
+  });
+
+  it('gives as reasons the three factors that cost the most points, the costliest first', () => {
+    // Given
+    const day = buildDay({
+      ...IDEAL,
+      temperatureMaxC: 10,
+      sunshineDurationH: 0,
+      windGustsMaxKmh: 40,
+    });
+
+    // When
+    const { reasons } = scoreSkiing(day);
+
+    // Then
+    expect(reasons).toEqual(['High of 10 °C', 'Sunshine 0% of daylight', 'Gusts up to 40 km/h']);
+  });
+
+  it('gives as reasons the three weightiest factors when none costs a point', () => {
+    // Given
+    const day = buildDay(IDEAL);
+
+    // When
+    const { reasons } = scoreSkiing(day);
+
+    // Then
+    expect(reasons).toEqual([
+      '150 cm of snow on the ground',
+      '15 cm of fresh snow',
+      'High of -5 °C',
+    ]);
+  });
+
+  it('gives fresh snow that rounds to nothing as none', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, snowfallCm: 0.3 });
+
+    // When
+    const { reasons } = scoreSkiing(day);
+
+    // Then
+    expect(reasons).toContain('No fresh snow');
+  });
+
+  it('gives a high just below freezing as 0 °C, without a sign', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, temperatureMaxC: -0.3 });
+
+    // When
+    const { reasons } = scoreSkiing(day);
+
+    // Then
+    expect(reasons).toContain('High of 0 °C');
+  });
+
   it('counts a day without daylight as one without sunshine', () => {
     // Given
     const day = buildDay({ ...IDEAL, sunshineDurationH: 0, daylightDurationH: 0 });

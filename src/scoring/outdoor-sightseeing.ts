@@ -1,6 +1,6 @@
 import { OUTDOOR_SIGHTSEEING } from '../config/index.js';
 import type { DailyWeather, DayScore } from './daily-weather.js';
-import { dayScore, MAX_SCORE, scoreFactor, sunshineShare, type Cap } from './factors.js';
+import { dayScore, scoreFactor, scoreSunshine, wholeDegrees, type Cap } from './factors.js';
 
 export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
   const { factors, caps } = OUTDOOR_SIGHTSEEING;
@@ -31,14 +31,9 @@ export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
       scoreFactor(
         factors.apparentTemperature,
         day.apparentTemperatureMaxC,
-        // Just below freezing rounds to -0, which toFixed would print with its sign.
-        (celsius) => `Feels like ${String(Math.round(celsius) || 0)} °C`,
+        (celsius) => `Feels like ${wholeDegrees(celsius)} °C`,
       ),
-      scoreFactor(
-        factors.sunshine,
-        sunshineShare(day),
-        (share) => `Sunshine ${(share * MAX_SCORE).toFixed(0)}% of daylight`,
-      ),
+      scoreSunshine(factors.sunshine, day),
       scoreFactor(factors.wind, day.windSpeedMaxKmh, (kmh) => `Wind up to ${kmh.toFixed(0)} km/h`),
       scoreFactor(factors.uv, day.uvIndexMax, (index) => `UV index up to ${index.toFixed(0)}`),
     ],
