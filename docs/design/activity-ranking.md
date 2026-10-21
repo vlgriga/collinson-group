@@ -223,7 +223,7 @@ come from the 2–3 most influential factors, in English, in metric units. Ratin
 | Marine coverage near the coastline | Coastal towns marked inland, or the reverse | An explicit reason in the answer; later, a nearest-coast lookup |
 | Until Resilience, any Open-Meteo failure during a request answers `UPSTREAM_UNAVAILABLE` | A marine outage hides the other three activities | Resilience serves stored data and keeps a marine failure to surfing |
 | Until Refresh, stored data may be up to a day old | A forecast revision is missed | Refresh adds the freshness window |
-| The week runs out at each place's midnight | The first request of the day for a known place pays an inline fetch (~1–2 s), and simultaneous ones each fetch | Refresh settles it, with its de-duplication and the background refresh |
+| The week runs out at each place's midnight | The first request of the day for a known place pays an inline fetch (~1–2 s), and simultaneous ones each fetch; the fetch committed last keeps its days, which may be the earlier one's, under the later `forecastFetchedAt` | Refresh settles it, with its de-duplication and the background refresh |
 | `has_marine = false` is never re-checked | A coastal place with one all-null Marine response loses surfing for good | Accepted: an inland point's Marine response is null by the model's grid, not by chance; a re-check if it shows |
 | An unknown name is not cached | Each repeat of a misspelled or random name calls Geocoding | Rate limiting in [Operations](operations.md); a negative cache if it shows |
 | Heuristic scoring is subjective | Rankings disputed | Thresholds in configuration, reasons in the output |
