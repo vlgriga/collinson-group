@@ -1,23 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { scoreOutdoorSightseeing } from '../../src/scoring/index.js';
-import { buildDay } from './factories/day.js';
-
-/** Every factor in its comfort band: the day the other cases change one thing about. */
-const IDEAL = {
-  precipitationMm: 0,
-  apparentTemperatureMaxC: 20,
-  sunshineDurationH: 5,
-  daylightDurationH: 10,
-  windSpeedMaxKmh: 10,
-  uvIndexMax: 3,
-  weatherCode: 1,
-} as const;
+import { buildDay, IDEAL_OUTDOOR_DAY } from './factories/day.js';
 
 describe('scoreOutdoorSightseeing', () => {
   it('scores 100 on a dry, mild, half-sunny, calm day with moderate UV', () => {
     // Given
-    const day = buildDay(IDEAL);
+    const day = buildDay(IDEAL_OUTDOOR_DAY);
 
     // When
     const { score } = scoreOutdoorSightseeing(day);
@@ -72,7 +61,7 @@ describe('scoreOutdoorSightseeing', () => {
     { change: 'UV index 13', day: { uvIndexMax: 13 }, score: 90 },
   ] as const)('scores $score on an otherwise ideal day with $change', ({ day, score }) => {
     // Given
-    const changed = buildDay({ ...IDEAL, ...day });
+    const changed = buildDay({ ...IDEAL_OUTDOOR_DAY, ...day });
 
     // When
     const scored = scoreOutdoorSightseeing(changed);
@@ -83,7 +72,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('counts a day without daylight as one without sunshine', () => {
     // Given
-    const day = buildDay({ ...IDEAL, sunshineDurationH: 0, daylightDurationH: 0 });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, sunshineDurationH: 0, daylightDurationH: 0 });
 
     // When
     const { score } = scoreOutdoorSightseeing(day);
@@ -96,7 +85,7 @@ describe('scoreOutdoorSightseeing', () => {
     'caps the day at 10 in a thunderstorm (weather code %i)',
     (weatherCode) => {
       // Given
-      const day = buildDay({ ...IDEAL, weatherCode });
+      const day = buildDay({ ...IDEAL_OUTDOOR_DAY, weatherCode });
 
       // When
       const { score } = scoreOutdoorSightseeing(day);
@@ -108,7 +97,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('leads the reasons with a thunderstorm', () => {
     // Given
-    const day = buildDay({ ...IDEAL, weatherCode: 95 });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, weatherCode: 95 });
 
     // When
     const { reasons } = scoreOutdoorSightseeing(day);
@@ -119,7 +108,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('caps the day at 20 from 10 mm of precipitation', () => {
     // Given
-    const day = buildDay({ ...IDEAL, precipitationMm: 10 });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, precipitationMm: 10 });
 
     // When
     const { score } = scoreOutdoorSightseeing(day);
@@ -130,7 +119,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('does not cap the day at 9.9 mm of precipitation', () => {
     // Given
-    const day = buildDay({ ...IDEAL, precipitationMm: 9.9 });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, precipitationMm: 9.9 });
 
     // When
     const { score } = scoreOutdoorSightseeing(day);
@@ -141,7 +130,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('leads the reasons with heavy rain or snow', () => {
     // Given
-    const day = buildDay({ ...IDEAL, precipitationMm: 12 });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, precipitationMm: 12 });
 
     // When
     const { reasons } = scoreOutdoorSightseeing(day);
@@ -155,13 +144,13 @@ describe('scoreOutdoorSightseeing', () => {
     { field: 'weatherCode', reason: 'Weather code missing from the forecast' },
   ] as const)('scores 0 when a cap needs the missing $field, naming it', ({ field, reason }) => {
     // Given
-    const day = buildDay({ ...IDEAL, [field]: null });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, [field]: null });
 
     // When
     const scored = scoreOutdoorSightseeing(day);
 
     // Then
-    expect(scored).toEqual({ score: 0, reasons: [reason] });
+    expect(scored).toEqual({ score: 0, rated: false, reasons: [reason] });
   });
 
   it.each([
@@ -172,7 +161,12 @@ describe('scoreOutdoorSightseeing', () => {
     { field: 'uvIndexMax', score: 89 },
   ] as const)('leaves out a missing $field and rescales the other weights', ({ field, score }) => {
     // Given a day of 80 with every factor: a gale and extreme UV cost 10 points each
-    const day = buildDay({ ...IDEAL, windSpeedMaxKmh: 50, uvIndexMax: 11, [field]: null });
+    const day = buildDay({
+      ...IDEAL_OUTDOOR_DAY,
+      windSpeedMaxKmh: 50,
+      uvIndexMax: 11,
+      [field]: null,
+    });
 
     // When
     const scored = scoreOutdoorSightseeing(day);
@@ -184,7 +178,7 @@ describe('scoreOutdoorSightseeing', () => {
   it('gives as reasons the three factors that cost the most points, the costliest first', () => {
     // Given
     const day = buildDay({
-      ...IDEAL,
+      ...IDEAL_OUTDOOR_DAY,
       apparentTemperatureMaxC: 0,
       sunshineDurationH: 0,
       windSpeedMaxKmh: 35,
@@ -199,7 +193,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('gives precipitation that rounds to nothing as none', () => {
     // Given
-    const day = buildDay({ ...IDEAL, precipitationMm: 0.03 });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, precipitationMm: 0.03 });
 
     // When
     const { reasons } = scoreOutdoorSightseeing(day);
@@ -210,7 +204,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('gives sunshine beyond the daylight as 100% of it', () => {
     // Given
-    const day = buildDay({ ...IDEAL, sunshineDurationH: 10.3, daylightDurationH: 10 });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, sunshineDurationH: 10.3, daylightDurationH: 10 });
 
     // When
     const { reasons } = scoreOutdoorSightseeing(day);
@@ -221,7 +215,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('gives a feel just below freezing as 0 °C, without a sign', () => {
     // Given
-    const day = buildDay({ ...IDEAL, apparentTemperatureMaxC: -0.3 });
+    const day = buildDay({ ...IDEAL_OUTDOOR_DAY, apparentTemperatureMaxC: -0.3 });
 
     // When
     const { reasons } = scoreOutdoorSightseeing(day);
@@ -232,7 +226,7 @@ describe('scoreOutdoorSightseeing', () => {
 
   it('gives as reasons the three weightiest factors when none costs a point', () => {
     // Given
-    const day = buildDay(IDEAL);
+    const day = buildDay(IDEAL_OUTDOOR_DAY);
 
     // When
     const { reasons } = scoreOutdoorSightseeing(day);

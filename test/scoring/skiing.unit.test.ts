@@ -141,7 +141,7 @@ describe('scoreSkiing', () => {
     const scored = scoreSkiing(day);
 
     // Then
-    expect(scored).toEqual({ score: 0, reasons: [reason] });
+    expect(scored).toEqual({ score: 0, rated: false, reasons: [reason] });
   });
 
   it.each([

@@ -22,4 +22,6 @@ export type DailyWeather = {
 export type DayScore = {
   score: number;
   reasons: string[];
+  /** False when a value the day needs is missing from the forecast: the score is not the weather's. */
+  rated: boolean;
 };
