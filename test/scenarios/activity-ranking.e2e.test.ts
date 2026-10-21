@@ -467,6 +467,7 @@ const UPSTREAM_FAILURES = [
     failing: 'a response that fails validation',
     failure: { body: { daily: { time: ['2026-10-18'] } } },
   },
+  { api: 'forecast', failing: 'a week without today', failure: 'without today' },
 ] as const;
 
 const A_SCORE: unknown = expect.toSatisfy(

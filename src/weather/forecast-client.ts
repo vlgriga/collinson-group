@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import type { DailyWeather, Location } from '../ranking/index.js';
-import { getJson, type LocalDate } from '../shared/index.js';
+import { getJson, UpstreamUnavailableError, type LocalDate } from '../shared/index.js';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 
@@ -59,6 +59,13 @@ export class ForecastClient {
       payload,
       data: { daily },
     } = await getJson(url, RESPONSE);
+    // Other dates, such as a week without today just after midnight, would leave the week asked
+    // for short (ADR 0009).
+    if (daily.time.length !== dates.length || daily.time.some((date, day) => date !== dates[day])) {
+      throw new UpstreamUnavailableError(
+        `${url.host}${url.pathname} answered for other dates than those asked for`,
+      );
+    }
     const days = daily.time.map((date, day) => ({
       date,
       precipitationMm: daily.precipitation_sum[day] ?? null,
