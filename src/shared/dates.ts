@@ -4,6 +4,11 @@ export type LocalDate = string & { readonly brand: 'LocalDate' };
 /** Today and the six days after it: "the next 7 days" of the requirements. */
 export const WEEK_DAYS = 7;
 
+/** Whether `dates` are `expected`, one each and in the same order. */
+export function sameDates(dates: readonly LocalDate[], expected: readonly LocalDate[]): boolean {
+  return dates.length === expected.length && dates.every((date, day) => date === expected[day]);
+}
+
 /** The week from today in `timezone`, today being the date it is there at `instant`. */
 export function localWeek(instant: Date, timezone: string): LocalDate[] {
   // Read part by part, so that no locale's date pattern is relied on.

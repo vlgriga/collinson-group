@@ -6,7 +6,7 @@ import {
   type DayScore,
   type Rating,
 } from '../scoring/index.js';
-import { localWeek, type LocalDate } from '../shared/index.js';
+import { localWeek, sameDates, type LocalDate } from '../shared/index.js';
 import type {
   Clock,
   ForecastFetcher,
@@ -94,8 +94,11 @@ function coversWeek(
   week: readonly LocalDate[],
 ): forecast is StoredForecast {
   return (
-    forecast?.days.length === week.length &&
-    forecast.days.every(({ date }, day) => date === week[day])
+    forecast !== undefined &&
+    sameDates(
+      forecast.days.map(({ date }) => date),
+      week,
+    )
   );
 }
 
