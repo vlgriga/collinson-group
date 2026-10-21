@@ -1,4 +1,4 @@
-import type { DailyWeather } from '../../../src/scoring/index.js';
+import type { DailyMarine, DailyWeather } from '../../../src/scoring/index.js';
 import type { LocalDate } from '../../../src/shared/index.js';
 
 /**
@@ -26,4 +26,11 @@ export function buildDay(overrides: Partial<DailyWeather> = {}): DailyWeather {
     windGustsMaxKmh: 20,
     ...overrides,
   };
+}
+
+/** The ideal outdoor day at a place with a sea forecast, its waves waist-high on a mid swell. */
+export function buildSeaDay(
+  overrides: Partial<DailyWeather & DailyMarine> = {},
+): DailyWeather & DailyMarine {
+  return { ...buildDay(), waveHeightMaxM: 1, swellWavePeriodMaxS: 9, ...overrides };
 }

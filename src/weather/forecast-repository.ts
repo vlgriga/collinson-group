@@ -1,9 +1,16 @@
 import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
-import { dailyWeather, forecastFetches, type Database } from '../db/index.js';
+import {
+  dailyMarine,
+  dailyWeather,
+  forecastFetches,
+  locations,
+  type Database,
+} from '../db/index.js';
 import type { DailyWeather, ForecastReader, Location, StoredForecast } from '../ranking/index.js';
 import type { LocalDate } from '../shared/index.js';
+import type { Marine } from './marine-client.js';
 
 /** The columns of a DailyWeather's values, all but the date that keys them. */
 const DAY_VALUES = {
@@ -23,10 +30,21 @@ const DAY_VALUES = {
 /** The columns a DailyWeather is read from. */
 const DAY = { date: dailyWeather.date, ...DAY_VALUES };
 
+/** The columns of a DailyMarine's values, all but the date that keys them. */
+const MARINE_DAY_VALUES = {
+  waveHeightMaxM: dailyMarine.waveHeightMaxM,
+  swellWavePeriodMaxS: dailyMarine.swellWavePeriodMaxS,
+};
+
+/** The columns a DailyMarine is read from. */
+const MARINE_DAY = { date: dailyMarine.date, ...MARINE_DAY_VALUES };
+
 export type ForecastFetch = {
   locationId: string;
   days: readonly DailyWeather[];
   payload: unknown;
+  /** What Marine answered for the same dates; undefined when it was not asked. */
+  marine: Marine | undefined;
   fetchedAt: Date;
 };
 
@@ -52,24 +70,49 @@ export class ForecastRepository implements ForecastReader {
       .orderBy(desc(forecastFetches.fetchedAt))
       .limit(1)
       .as('latest_fetch');
-    // One statement, so that the days and the fetch time are read from the same state.
+    // One statement, so that the days, the sea's, whether the place has a sea and the fetch time
+    // are read from the same state, not from the place as it was when the request resolved it. A
+    // day of the sea is read beside the day of weather of its date, the only one it is used with.
     const rows = await this.#db
-      .select({ day: DAY, fetchedAt: latestFetch.fetchedAt })
+      .select({
+        day: DAY,
+        marineDay: MARINE_DAY,
+        hasMarine: locations.hasMarine,
+        fetchedAt: latestFetch.fetchedAt,
+      })
       .from(dailyWeather)
       .innerJoin(latestFetch, sql`true`)
+      .innerJoin(locations, eq(locations.id, dailyWeather.locationId))
+      .leftJoin(
+        dailyMarine,
+        and(
+          eq(dailyMarine.locationId, dailyWeather.locationId),
+          eq(dailyMarine.date, dailyWeather.date),
+        ),
+      )
       .where(and(eq(dailyWeather.locationId, location.id), inArray(dailyWeather.date, [...dates])))
       .orderBy(asc(dailyWeather.date));
     const [first] = rows;
-    return first === undefined
-      ? undefined
-      : { days: rows.map(({ day }) => day), fetchedAt: first.fetchedAt };
+    if (first === undefined) {
+      return undefined;
+    }
+    return {
+      days: rows.map(({ day }) => day),
+      // A place found to have no sea has no sea forecast, whatever days of one a fetch before
+      // stored.
+      marineDays:
+        first.hasMarine === false
+          ? null
+          : rows.map(({ marineDay }) => marineDay).filter((marineDay) => marineDay !== null),
+      fetchedAt: first.fetchedAt,
+    };
   }
 
   /**
-   * The days and the fetch they came from, together or not at all. A day already stored takes
-   * the newer values (ADR 0005).
+   * The days, the sea's and the fetches they came from, together or not at all; and, where Marine
+   * was asked, whether the place has a sea. A day already stored takes the newer values (ADR 0005).
    */
-  async saveFetch({ locationId, days, payload, fetchedAt }: ForecastFetch): Promise<void> {
+  async saveFetch({ locationId, days, payload, marine, fetchedAt }: ForecastFetch): Promise<void> {
     await this.#db.transaction(async (tx) => {
       await tx
         .insert(dailyWeather)
@@ -99,6 +142,33 @@ export class ForecastRepository implements ForecastReader {
         fetchedAt,
         rawPayload: payload,
       });
+      if (marine === undefined) {
+        return;
+      }
+      if (marine.days !== null) {
+        await tx
+          .insert(dailyMarine)
+          .values(marine.days.map((day) => ({ locationId, ...day })))
+          .onConflictDoUpdate({
+            target: [dailyMarine.locationId, dailyMarine.date],
+            set: {
+              waveHeightMaxM: excluded(dailyMarine.waveHeightMaxM),
+              swellWavePeriodMaxS: excluded(dailyMarine.swellWavePeriodMaxS),
+              updatedAt: sql`now()`,
+            } satisfies Record<keyof typeof MARINE_DAY_VALUES | 'updatedAt', SQL>,
+          });
+      }
+      await tx.insert(forecastFetches).values({
+        locationId,
+        source: 'MARINE',
+        status: 'SUCCEEDED',
+        fetchedAt,
+        rawPayload: marine.payload,
+      });
+      await tx
+        .update(locations)
+        .set({ hasMarine: marine.days !== null, updatedAt: sql`now()` })
+        .where(eq(locations.id, locationId));
     });
   }
 }

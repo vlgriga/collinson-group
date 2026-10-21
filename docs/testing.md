@@ -133,9 +133,10 @@ There are three kinds of helper, named by what they touch:
 
 ## Fixtures
 
-- Real Open-Meteo responses are recorded once into `test/fixtures/open-meteo/`
-  (`forecast-chamonix.json`, `marine-biarritz.json`, `marine-inland-null.json`,
-  `geocoding-paris.json`, …). `scripts/record-fixtures.ts` refreshes them, and they are committed.
+- Real Open-Meteo responses are recorded once into `test/fixtures/open-meteo/`, one of each API
+  per place (`geocoding-paris.json`, `forecast-chamonix.json`, `marine-biarritz.json`, and
+  `marine-chamonix.json`, every value null inland, …). `scripts/record-fixtures.ts` refreshes them,
+  a place or a single recording at a time, and they are committed.
 - The [Open-Meteo fake](#isolating-dependencies) serves them, rebasing their dates to the
   `start_date`–`end_date` it is asked for ([ADR 0009](decisions/0009-forecast-week-in-the-location-timezone.md)).
 - Scorer tests build their inputs with `build…` helpers, not from JSON.

@@ -1,0 +1,83 @@
+{
+  "latitude": 45.291664,
+  "longitude": 6.6250153,
+  "generationtime_ms": 0.31769275665283203,
+  "utc_offset_seconds": 7200,
+  "timezone": "Europe/Paris",
+  "timezone_abbreviation": "GMT+2",
+  "elevation": 2325,
+  "daily_units": {
+    "time": "iso8601",
+    "wave_height_max": "m",
+    "wave_period_max": "s",
+    "wave_direction_dominant": "°",
+    "swell_wave_height_max": "m",
+    "swell_wave_period_max": "s",
+    "wind_wave_height_max": "m"
+  },
+  "daily": {
+    "time": [
+      "2026-10-21",
+      "2026-10-22",
+      "2026-10-23",
+      "2026-10-24",
+      "2026-10-25",
+      "2026-10-26",
+      "2026-10-27"
+    ],
+    "wave_height_max": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "wave_period_max": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "wave_direction_dominant": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "swell_wave_height_max": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "swell_wave_period_max": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "wind_wave_height_max": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  }
+}

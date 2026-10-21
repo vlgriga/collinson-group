@@ -16,6 +16,8 @@ export const ACTIVITY_RANKING = /* GraphQL */ `
       forecastFetchedAt
       activities {
         activity
+        available
+        unavailableReason
         score
         bestDay
         days {
@@ -46,6 +48,8 @@ export type ActivityRankingResponse = {
       forecastFetchedAt: string;
       activities: {
         activity: string;
+        available: boolean;
+        unavailableReason: string | null;
         score: number | null;
         bestDay: string | null;
         days: { date: string; score: number; rating: string; reasons: string[] }[];

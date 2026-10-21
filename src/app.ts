@@ -3,7 +3,12 @@ import { connectDatabase, type Database } from './db/index.js';
 import { createGraphqlServer, type GraphqlServer } from './graphql/index.js';
 import { GeocodingClient, LocationRepository, LocationService } from './locations/index.js';
 import { RankingService, type Clock } from './ranking/index.js';
-import { ForecastClient, ForecastRepository, ForecastService } from './weather/index.js';
+import {
+  ForecastClient,
+  ForecastRepository,
+  ForecastService,
+  MarineClient,
+} from './weather/index.js';
 
 export type AppDependencies = {
   env: Env;
@@ -33,7 +38,8 @@ export function createApp({ env, clock }: AppDependencies): App {
   });
   const storedForecasts = new ForecastRepository({ db });
   const forecasts = new ForecastService({
-    client: new ForecastClient(),
+    forecastClient: new ForecastClient(),
+    marineClient: new MarineClient(),
     repository: storedForecasts,
     clock,
   });

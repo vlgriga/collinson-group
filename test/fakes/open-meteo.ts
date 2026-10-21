@@ -11,6 +11,7 @@ const FIXTURES = new URL('../fixtures/open-meteo/', import.meta.url);
 const ENDPOINTS = {
   geocoding: 'https://geocoding-api.open-meteo.com/v1/search',
   forecast: 'https://api.open-meteo.com/v1/forecast',
+  marine: 'https://marine-api.open-meteo.com/v1/marine',
 } as const;
 
 export type OpenMeteoApi = keyof typeof ENDPOINTS;
@@ -22,9 +23,9 @@ export type OpenMeteoFailure =
   /** A 200 whose body is whatever the test gives, such as one the client must refuse. */
   | { body: JsonBodyType }
   /**
-   * The recorded forecast for the dates from `from` to `to`, whatever was asked for: such as a
-   * week without today, as a provider with no forecast for the place's today yet answers
-   * (ADR 0009).
+   * The recorded forecast, or marine forecast, for the dates from `from` to `to`, whatever was
+   * asked for: such as a week without today, as a provider with no forecast for the place's today
+   * yet answers (ADR 0009).
    */
   | { dates: { from: string; to: string } }
   /** The recorded forecast as asked, its hours those of the dates from `from` to `to` instead. */
@@ -40,6 +41,7 @@ const SERIES = z
   .record(z.string(), z.array(z.unknown()))
   .and(z.object({ time: z.array(z.string()) }));
 const FORECAST = z.looseObject({ daily: SERIES, hourly: SERIES });
+const MARINE = z.looseObject({ daily: SERIES });
 
 type Search = {
   /** Lower-cased: Open-Meteo matches a name without regard to case. */
@@ -50,10 +52,12 @@ type Search = {
   geocoding: z.infer<typeof GEOCODING>;
 };
 
-type Forecast = {
+/** A place the fake has the forecasts of, found by its coordinates as Geocoding gave them. */
+type Place = {
   latitude: number;
   longitude: number;
   forecast: z.infer<typeof FORECAST>;
+  marine: z.infer<typeof MARINE>;
 };
 
 /**
@@ -74,12 +78,16 @@ export class OpenMeteoFake {
     geocoding: GEOCODING.parse(readFixture(`geocoding-${file}.json`)),
   }));
 
-  readonly #forecasts: Forecast[] = this.#searches
+  readonly #places: Place[] = this.#searches
     .filter(({ forecast }) => forecast)
     .map(({ file, geocoding }) => {
       const [top] = geocoding.results;
-      const forecast = FORECAST.parse(readFixture(`forecast-${file}.json`));
-      return { latitude: top.latitude, longitude: top.longitude, forecast };
+      return {
+        latitude: top.latitude,
+        longitude: top.longitude,
+        forecast: FORECAST.parse(readFixture(`forecast-${file}.json`)),
+        marine: MARINE.parse(readFixture(`marine-${file}.json`)),
+      };
     });
 
   readonly #server = setupServer(
@@ -88,6 +96,9 @@ export class OpenMeteoFake {
     ),
     http.get(ENDPOINTS.forecast, ({ request }) =>
       this.#answer('forecast', request, (url, hoursUrl) => this.#forecast(url, hoursUrl)),
+    ),
+    http.get(ENDPOINTS.marine, ({ request }) =>
+      this.#answer('marine', request, (url) => this.#marine(url)),
     ),
   );
 
@@ -157,22 +168,9 @@ export class OpenMeteoFake {
    * the hours as `hoursUrl` asks, when it is given.
    */
   #forecast(url: URL, hoursUrl: URL = url): JsonBodyType {
-    const place = this.#forecasts.find(
-      ({ latitude, longitude }) =>
-        latitude === Number(url.searchParams.get('latitude')) &&
-        longitude === Number(url.searchParams.get('longitude')),
-    );
-    if (place === undefined) {
-      throw new Error(`No recorded forecast for ${url.search}`);
-    }
-    const dates = datesBetween(param(url, 'start_date'), param(url, 'end_date'));
-    const { daily, hourly, ...rest } = place.forecast;
-    const rebased = Object.fromEntries(
-      Object.entries(daily).map(([key, values]) => [
-        key,
-        key === 'time' ? dates : values.slice(0, dates.length),
-      ]),
-    );
+    const { daily: recordedDays, hourly: recordedHours, ...rest } = this.#place(url).forecast;
+    const daily = asked(url, 'daily', recordedDays);
+    const hourly = asked(url, 'hourly', recordedHours);
     // Each hour of a recorded day keeps its time of day, on the date that takes the day's place.
     const hourDates = datesBetween(param(hoursUrl, 'start_date'), param(hoursUrl, 'end_date'));
     const dateFor = new Map(
@@ -189,8 +187,59 @@ export class OpenMeteoFake {
         key === 'time' ? hours.map(({ time }) => time) : hours.map(({ hour }) => values[hour]),
       ]),
     );
-    return { ...rest, daily: rebased, hourly: rebasedHours };
+    return { ...rest, daily: rebaseDays(url, daily), hourly: rebasedHours };
   }
+
+  /** The recorded days of the place's sea, dated from `start_date` to `end_date` as asked. */
+  #marine(url: URL): JsonBodyType {
+    const { daily, ...rest } = this.#place(url).marine;
+    return { ...rest, daily: rebaseDays(url, asked(url, 'daily', daily)) };
+  }
+
+  /** The place at the coordinates `url` asks for; a place not recorded fails the test. */
+  #place(url: URL): Place {
+    const place = this.#places.find(
+      ({ latitude, longitude }) =>
+        latitude === Number(url.searchParams.get('latitude')) &&
+        longitude === Number(url.searchParams.get('longitude')),
+    );
+    if (place === undefined) {
+      throw new Error(`No recording for ${url.origin}${url.pathname}${url.search}`);
+    }
+    return place;
+  }
+}
+
+/**
+ * The recorded series of the variables `url` asks for at `step`, with their times, as Open-Meteo
+ * answers no others; a variable not recorded fails the test, as Open-Meteo refuses one it does not
+ * know.
+ */
+function asked(
+  url: URL,
+  step: 'daily' | 'hourly',
+  recorded: z.infer<typeof SERIES>,
+): z.infer<typeof SERIES> {
+  const variables = param(url, step).split(',');
+  const unknown = variables.filter((variable) => !(variable in recorded));
+  if (unknown.length > 0) {
+    throw new Error(`No recording of ${step} ${unknown.join(', ')}`);
+  }
+  return {
+    ...Object.fromEntries(Object.entries(recorded).filter(([key]) => variables.includes(key))),
+    time: recorded.time,
+  };
+}
+
+/** The recorded days, dated from `start_date` to `end_date` as `url` asks (ADR 0009). */
+function rebaseDays(url: URL, daily: z.infer<typeof SERIES>): Record<string, unknown[]> {
+  const dates = datesBetween(param(url, 'start_date'), param(url, 'end_date'));
+  return Object.fromEntries(
+    Object.entries(daily).map(([key, values]) => [
+      key,
+      key === 'time' ? dates : values.slice(0, dates.length),
+    ]),
+  );
 }
 
 function readFixture(file: string): unknown {

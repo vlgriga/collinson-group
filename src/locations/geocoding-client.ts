@@ -27,7 +27,7 @@ const RESPONSE = z.object({
 });
 
 /** A place as the geocoder knows it, before it is stored. */
-export type GeocodedPlace = Omit<Location, 'id'> & {
+export type GeocodedPlace = Omit<Location, 'id' | 'hasMarine'> & {
   /** The geocoder's own id: two names for one place share it. */
   geocodingId: number;
 };

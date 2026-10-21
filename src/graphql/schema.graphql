@@ -42,8 +42,8 @@ type ActivityRanking {
   """
   forecastFetchedAt: DateTime!
   """
-  Each activity with its days and its weekly score, the best weekly score first; on a tie, in
-  the order of Activity.
+  Each activity with its days and its weekly score, the best weekly score first and those not
+  available last; on a tie, in the order of Activity.
   """
   activities: [ActivityForecast!]!
 }
@@ -57,15 +57,25 @@ type ActivityForecast {
   """
   activity: Activity!
   """
-  The weekly score, 0–100: the mean of the days' scores.
+  Whether the place supports the activity at all: surfing is not available where there is no sea.
+  """
+  available: Boolean!
+  """
+  Why the place does not support the activity, such as "No marine forecast here"; null when it
+  does.
+  """
+  unavailableReason: String
+  """
+  The weekly score, 0–100: the mean of the days' scores; null when the activity is not available.
   """
   score: Int
   """
-  The day with the highest score; the earliest of them on a tie.
+  The day with the highest score; the earliest of them on a tie; null when the activity is not
+  available.
   """
   bestDay: Date
   """
-  Today and the days after it, in date order.
+  Today and the days after it, in date order; none when the activity is not available.
   """
   days: [DayScore!]!
 }
@@ -135,6 +145,7 @@ What the days are scored for.
 """
 enum Activity {
   SKIING
+  SURFING
   OUTDOOR_SIGHTSEEING
   INDOOR_SIGHTSEEING
 }

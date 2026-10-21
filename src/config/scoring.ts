@@ -129,6 +129,81 @@ export const INDOOR_SIGHTSEEING = {
 } as const satisfies IndoorSightseeingRules;
 
 /**
+ * The wave height in m past which only experts go out, and rescue is hard. Where the wave height
+ * curve ends and its cap begins, so that the two cannot drift apart.
+ */
+const DANGEROUS_WAVES_M = 4;
+
+type SurfingRules = {
+  readonly factors: Record<'waveHeight' | 'swellPeriod' | 'wind' | 'temperature', Factor>;
+  readonly caps: {
+    readonly dangerousWaves: Cap & { readonly overM: number };
+    readonly thunderstorm: Cap & { readonly weatherCodes: readonly number[] };
+  };
+};
+
+export const SURFING = {
+  factors: {
+    waveHeight: {
+      // Without waves to ride there is no session, so they weigh the most.
+      weight: 0.35,
+      // The day's highest significant wave height, in m: at 0.3 m, ankle-high, there is nothing
+      // to ride; from 1 m, waist-high, to 2.5 m, overhead, most surfers have a good day; nothing
+      // is left of the factor where the waves turn dangerous.
+      curve: [
+        { at: 0.3, score: 0 },
+        { at: 1, score: 1 },
+        { at: 2.5, score: 1 },
+        { at: DANGEROUS_WAVES_M, score: 0 },
+      ],
+    },
+    swellPeriod: {
+      // The period decides whether the waves break clean and with power, or as a jumble.
+      weight: 0.3,
+      // The day's longest, in s: at 6 s it is local wind chop; from 12 s it is a groundswell,
+      // lined up and powerful.
+      curve: [
+        { at: 6, score: 0 },
+        { at: 12, score: 1 },
+      ],
+    },
+    wind: {
+      // Wind roughens the face of the waves; its direction against the coast is not known, so
+      // any wind counts against the day (docs/prd.md#out-of-scope).
+      weight: 0.25,
+      // The day's maximum, in km/h: up to 10 (Beaufort 2) the sea stays glassy; at 30 (Beaufort
+      // 5) whitecaps chop it up.
+      curve: [
+        { at: 10, score: 1 },
+        { at: 30, score: 0 },
+      ],
+    },
+    temperature: {
+      // A wetsuit keeps the water bearable; the air decides how long one waits on the beach.
+      weight: 0.1,
+      // The day's highest air temperature, in °C: at 5 a session is short even in a hood; from
+      // 20 it is comfortable out of the water too.
+      curve: [
+        { at: 5, score: 0 },
+        { at: 20, score: 1 },
+      ],
+    },
+  },
+  caps: {
+    dangerousWaves: {
+      // Big-wave surfers still go out, as some lifts still run in a gale; nobody else should.
+      overM: DANGEROUS_WAVES_M,
+      maxScore: 10,
+    },
+    thunderstorm: {
+      // A surfer is the highest point on a flat sea that conducts: nobody should be in the water.
+      weatherCodes: Object.values(WMO_THUNDERSTORM),
+      maxScore: 0,
+    },
+  },
+} as const satisfies SurfingRules;
+
+/**
  * The least snow on the ground there is anything to ski on, in cm: under it grass and rocks show
  * through. Where the no-snow cap stops and the snow depth curve starts, so that the two cannot
  * drift apart.

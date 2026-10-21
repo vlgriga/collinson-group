@@ -19,27 +19,38 @@ export type Scalars = {
 export type Activity =
   | 'INDOOR_SIGHTSEEING'
   | 'OUTDOOR_SIGHTSEEING'
-  | 'SKIING';
+  | 'SKIING'
+  | 'SURFING';
 
 /** How good the coming days are for one activity. */
 export type ActivityForecast = {
   __typename?: 'ActivityForecast';
   /** The activity scored. */
   activity: Activity;
-  /** The day with the highest score; the earliest of them on a tie. */
+  /** Whether the place supports the activity at all: surfing is not available where there is no sea. */
+  available: Scalars['Boolean']['output'];
+  /**
+   * The day with the highest score; the earliest of them on a tie; null when the activity is not
+   * available.
+   */
   bestDay?: Maybe<Scalars['Date']['output']>;
-  /** Today and the days after it, in date order. */
+  /** Today and the days after it, in date order; none when the activity is not available. */
   days: Array<DayScore>;
-  /** The weekly score, 0–100: the mean of the days' scores. */
+  /** The weekly score, 0–100: the mean of the days' scores; null when the activity is not available. */
   score?: Maybe<Scalars['Int']['output']>;
+  /**
+   * Why the place does not support the activity, such as "No marine forecast here"; null when it
+   * does.
+   */
+  unavailableReason?: Maybe<Scalars['String']['output']>;
 };
 
 /** The coming days of one place, scored per activity. */
 export type ActivityRanking = {
   __typename?: 'ActivityRanking';
   /**
-   * Each activity with its days and its weekly score, the best weekly score first; on a tie, in
-   * the order of Activity.
+   * Each activity with its days and its weekly score, the best weekly score first and those not
+   * available last; on a tie, in the order of Activity.
    */
   activities: Array<ActivityForecast>;
   /**
@@ -210,9 +221,11 @@ export type ResolversParentTypes = {
 
 export type ActivityForecastResolvers<ContextType = any, ParentType extends ResolversParentTypes['ActivityForecast'] = ResolversParentTypes['ActivityForecast']> = {
   activity?: Resolver<ResolversTypes['Activity'], ParentType, ContextType>;
+  available?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   bestDay?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   days?: Resolver<Array<ResolversTypes['DayScore']>, ParentType, ContextType>;
   score?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  unavailableReason?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 };
 
 export type ActivityRankingResolvers<ContextType = any, ParentType extends ResolversParentTypes['ActivityRanking'] = ResolversParentTypes['ActivityRanking']> = {

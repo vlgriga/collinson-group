@@ -1,5 +1,5 @@
 // The port's terms, for the modules that implement them.
-export type { DailyWeather } from '../scoring/index.js';
+export type { DailyMarine, DailyWeather } from '../scoring/index.js';
 export type {
   Clock,
   ForecastFetcher,

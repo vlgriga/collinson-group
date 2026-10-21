@@ -22,6 +22,13 @@
       "when": 1792566305718,
       "tag": "0002_skiing_weather",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792572507440,
+      "tag": "0003_marine",
+      "breakpoints": true
     }
   ]
 }
