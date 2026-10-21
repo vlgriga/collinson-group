@@ -5,9 +5,8 @@ import { dailyWeather, forecastFetches, type Database } from '../db/index.js';
 import type { DailyWeather, ForecastReader, Location, StoredForecast } from '../ranking/index.js';
 import type { LocalDate } from '../shared/index.js';
 
-/** The columns a DailyWeather is read from. */
-const DAY = {
-  date: dailyWeather.date,
+/** The columns of a DailyWeather's values, all but the date that keys them. */
+const DAY_VALUES = {
   precipitationMm: dailyWeather.precipitationMm,
   apparentTemperatureMaxC: dailyWeather.apparentTemperatureMaxC,
   sunshineDurationH: dailyWeather.sunshineDurationH,
@@ -16,6 +15,9 @@ const DAY = {
   uvIndexMax: dailyWeather.uvIndexMax,
   weatherCode: dailyWeather.weatherCode,
 };
+
+/** The columns a DailyWeather is read from. */
+const DAY = { date: dailyWeather.date, ...DAY_VALUES };
 
 export type ForecastFetch = {
   locationId: string;
@@ -71,13 +73,10 @@ export class ForecastRepository implements ForecastReader {
         .onConflictDoUpdate({
           target: [dailyWeather.locationId, dailyWeather.date],
           set: {
-            precipitationMm: excluded(dailyWeather.precipitationMm),
-            apparentTemperatureMaxC: excluded(dailyWeather.apparentTemperatureMaxC),
-            sunshineDurationH: excluded(dailyWeather.sunshineDurationH),
-            daylightDurationH: excluded(dailyWeather.daylightDurationH),
-            windSpeedMaxKmh: excluded(dailyWeather.windSpeedMaxKmh),
-            uvIndexMax: excluded(dailyWeather.uvIndexMax),
-            weatherCode: excluded(dailyWeather.weatherCode),
+            // From the same list as what is read, so that no value read is left un-overwritten.
+            ...Object.fromEntries(
+              Object.entries(DAY_VALUES).map(([field, column]) => [field, excluded(column)]),
+            ),
             updatedAt: sql`now()`,
           },
         });
