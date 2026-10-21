@@ -70,12 +70,19 @@ export class ForecastRepository implements ForecastReader {
       .orderBy(desc(forecastFetches.fetchedAt))
       .limit(1)
       .as('latest_fetch');
-    // One statement, so that the days, the sea's and the fetch time are read from the same state.
-    // A day of the sea is read beside the day of weather of its date, the only one it is used with.
+    // One statement, so that the days, the sea's, whether the place has a sea and the fetch time
+    // are read from the same state, not from the place as it was when the request resolved it. A
+    // day of the sea is read beside the day of weather of its date, the only one it is used with.
     const rows = await this.#db
-      .select({ day: DAY, marineDay: MARINE_DAY, fetchedAt: latestFetch.fetchedAt })
+      .select({
+        day: DAY,
+        marineDay: MARINE_DAY,
+        hasMarine: locations.hasMarine,
+        fetchedAt: latestFetch.fetchedAt,
+      })
       .from(dailyWeather)
       .innerJoin(latestFetch, sql`true`)
+      .innerJoin(locations, eq(locations.id, dailyWeather.locationId))
       .leftJoin(
         dailyMarine,
         and(
@@ -94,7 +101,7 @@ export class ForecastRepository implements ForecastReader {
       // A place found to have no sea has no sea forecast, whatever days of one a fetch before
       // stored.
       marineDays:
-        location.hasMarine === false
+        first.hasMarine === false
           ? null
           : rows.map(({ marineDay }) => marineDay).filter((marineDay) => marineDay !== null),
       fetchedAt: first.fetchedAt,
