@@ -35,7 +35,10 @@ export interface LocationResolver {
 export type StoredForecast = {
   /** In date order. */
   days: DailyWeather[];
-  /** The days of the place's sea, in date order; null for a place without a sea forecast. */
+  /**
+   * The days of the place's sea, in date order, as many as are stored, none until Marine has been
+   * asked; null for a place Marine found no sea at, whatever days of one are stored.
+   */
   marineDays: DailyMarine[] | null;
   /** The latest successful fetch of the place's forecast. */
   fetchedAt: Date;
