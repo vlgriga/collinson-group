@@ -5,8 +5,10 @@ import {
   scoreIndoorSightseeing,
   scoreOutdoorSightseeing,
   scoreSkiing,
+  scoreSurfing,
   summarizeWeek,
   type Activity,
+  type DailyMarine,
   type DailyWeather,
   type DayScore,
   type Rating,
@@ -36,26 +38,35 @@ export type ActivityDay = {
   reasons: string[];
 };
 
-export type ActivityForecast = {
-  activity: Activity;
-  score: number;
-  bestDay: LocalDate;
-  days: ActivityDay[];
-};
+/** The coming days for one activity; none scored where the place does not support it. */
+export type ActivityForecast = { activity: Activity } & (
+  | {
+      available: true;
+      unavailableReason: null;
+      score: number;
+      bestDay: LocalDate;
+      days: ActivityDay[];
+    }
+  | { available: false; unavailableReason: string; score: null; bestDay: null; days: [] }
+);
 
 export type Ranking = {
   location: Location;
   /** When the forecast the days are scored from was fetched. */
   forecastFetchedAt: Date;
-  /** The best weekly score first. */
+  /** The best weekly score first, those not available last. */
   activities: ActivityForecast[];
 };
 
-const SCORERS: Record<Activity, (day: DailyWeather) => DayScore> = {
+/** How a day is scored for each activity its weather alone decides. */
+const WEATHER_SCORERS: Record<Exclude<Activity, 'SURFING'>, (day: DailyWeather) => DayScore> = {
   SKIING: scoreSkiing,
   OUTDOOR_SIGHTSEEING: scoreOutdoorSightseeing,
   INDOOR_SIGHTSEEING: scoreIndoorSightseeing,
 };
+
+/** Surfing's reason where Marine forecasts no sea (docs/design/activity-ranking.md#scoring). */
+const NO_MARINE_FORECAST = 'No marine forecast here';
 
 /** Answers a ranking request: the place a city resolves to, and its coming days per activity. */
 export class RankingService {
@@ -81,11 +92,12 @@ export class RankingService {
     const week = localWeek(this.#clock.now(), location.timezone);
     const forecast = await this.#forecastFor(location, week);
     const days = forecast.days.slice(0, request.days);
+    const marineDays = forecast.marineDays?.slice(0, request.days) ?? null;
     return {
       location,
       forecastFetchedAt: forecast.fetchedAt,
       activities: orderActivities(
-        ACTIVITIES.map((activity) => forecastActivity(activity, days, SCORERS[activity])),
+        ACTIVITIES.map((activity) => forecastActivity(activity, days, marineDays)),
       ),
     };
   }
@@ -100,28 +112,74 @@ export class RankingService {
   }
 }
 
-/** Whether `forecast` holds a day for each date of `week`, and no other. */
+/**
+ * Whether `forecast` holds a day for each date of `week`, and no other; and so does its sea, unless
+ * the place has no sea forecast.
+ */
 function coversWeek(
   forecast: StoredForecast | undefined,
   week: readonly LocalDate[],
 ): forecast is StoredForecast {
   return (
     forecast !== undefined &&
-    sameDates(
-      forecast.days.map(({ date }) => date),
-      week,
-    )
+    sameDates(datesOf(forecast.days), week) &&
+    (forecast.marineDays === null || sameDates(datesOf(forecast.marineDays), week))
   );
 }
 
+function datesOf(days: readonly { date: LocalDate }[]): LocalDate[] {
+  return days.map(({ date }) => date);
+}
+
+/** An activity's days scored, or why the place does not support it. */
 function forecastActivity(
   activity: Activity,
   days: readonly DailyWeather[],
-  scoreDay: (day: DailyWeather) => DayScore,
+  marineDays: readonly DailyMarine[] | null,
+): ActivityForecast {
+  if (activity !== 'SURFING') {
+    return scoredForecast(activity, days, WEATHER_SCORERS[activity]);
+  }
+  return marineDays === null
+    ? {
+        activity,
+        available: false,
+        unavailableReason: NO_MARINE_FORECAST,
+        score: null,
+        bestDay: null,
+        days: [],
+      }
+    : scoredForecast(activity, withSea(days, marineDays), scoreSurfing);
+}
+
+/** Each day with its sea's values; the two hold the same dates, as the week they cover. */
+function withSea(
+  days: readonly DailyWeather[],
+  marineDays: readonly DailyMarine[],
+): (DailyWeather & DailyMarine)[] {
+  return days.map((day, index) => {
+    const sea = marineDays[index];
+    if (sea?.date !== day.date) {
+      throw new Error(`No sea forecast for ${day.date}`);
+    }
+    return { ...day, ...sea };
+  });
+}
+
+function scoredForecast<Day extends DailyWeather>(
+  activity: Activity,
+  days: readonly Day[],
+  scoreDay: (day: Day) => DayScore,
 ): ActivityForecast {
   const scored = days.map((day) => {
     const { score, reasons } = scoreDay(day);
     return { date: day.date, score, rating: rate(score), reasons };
   });
-  return { activity, ...summarizeWeek(scored), days: scored };
+  return {
+    activity,
+    available: true,
+    unavailableReason: null,
+    ...summarizeWeek(scored),
+    days: scored,
+  };
 }

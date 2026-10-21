@@ -8,6 +8,7 @@ import {
   readDailyWeather,
   readForecastFetches,
   storeDayMissing,
+  storeMarineDayMissing,
 } from '../weather/factories/forecast.js';
 import { requestActivityRanking, type ActivityRankingResponse } from './support.js';
 
@@ -77,6 +78,8 @@ describe('activityRanking', () => {
       // Then
       expect(forecastOf(response, activity)).toEqual({
         activity,
+        available: true,
+        unavailableReason: null,
         score: A_SCORE,
         bestDay: ONE_OF_THE_WEEK,
         days: WEEK.map((date) => ({
@@ -89,7 +92,48 @@ describe('activityRanking', () => {
     },
   );
 
-  it('lists the activities best weekly score first: indoor sightseeing in a wet week, skiing without snow last', async () => {
+  it('scores SURFING in a coastal city for the 7 days from today, each with a rating and a reason', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Biarritz' });
+
+    // Then
+    expect(forecastOf(response, 'SURFING')).toEqual({
+      activity: 'SURFING',
+      available: true,
+      unavailableReason: null,
+      score: A_SCORE,
+      bestDay: ONE_OF_THE_WEEK,
+      days: WEEK.map((date) => ({
+        date,
+        score: A_SCORE,
+        rating: A_RATING,
+        reasons: SOME_REASON,
+      })),
+    });
+  });
+
+  it('marks SURFING unavailable in an inland city: no marine forecast here, no score, no days', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(forecastOf(response, 'SURFING')).toEqual({
+      activity: 'SURFING',
+      available: false,
+      unavailableReason: 'No marine forecast here',
+      score: null,
+      bestDay: null,
+      days: [],
+    });
+  });
+
+  it('lists the activities best weekly score first: indoor sightseeing in a wet week, skiing without snow, surfing inland last', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
 
@@ -99,13 +143,15 @@ describe('activityRanking', () => {
     // Then
     // Rain on five of the recording's seven days keeps outdoor sightseeing below indoor over the
     // week, and with no snow on the ground every skiing day scores 0. The enum has skiing first
-    // and indoor last, so only the scores turn the order round.
+    // and indoor last, so only the scores turn the order round; surfing, unavailable, comes after
+    // even a 0.
     expect(
       response.data?.activityRanking.activities.map(({ activity, score }) => ({ activity, score })),
     ).toEqual([
       { activity: 'INDOOR_SIGHTSEEING', score: A_SCORE },
       { activity: 'OUTDOOR_SIGHTSEEING', score: A_SCORE },
       { activity: 'SKIING', score: 0 },
+      { activity: 'SURFING', score: null },
     ]);
   });
 
@@ -122,6 +168,8 @@ describe('activityRanking', () => {
     // In the recording, the week's best day is the 7th and its mean differs from the 3 days'.
     expect(outdoor).toEqual({
       activity: 'OUTDOOR_SIGHTSEEING',
+      available: true,
+      unavailableReason: null,
       score: Math.round(scores.reduce((sum, score) => sum + score, 0) / 3),
       bestDay: expect.toBeOneOf(WEEK.slice(0, 3)) as unknown,
       days: WEEK.slice(0, 3).map((date) => expect.objectContaining({ date }) as unknown),
@@ -387,30 +435,36 @@ describe('activityRanking', () => {
     expect(response.data?.activityRanking.forecastFetchedAt).toBe('2026-10-19T09:00:00.000Z');
   });
 
-  it('answers a second request the same day from the stored forecast, asking Open-Meteo nothing', async () => {
-    // Given
-    const clock = fixedClock('2026-10-18T09:00:00Z');
-    const app = await createTestApp({ clock });
-    const first = await requestActivityRanking(app, { city: 'Chamonix' });
-    clock.advanceTo('2026-10-18T15:00:00Z');
+  it.each([
+    { city: 'Chamonix', place: 'an inland city' },
+    { city: 'Biarritz', place: 'a coastal city' },
+  ])(
+    'answers a second request for $place the same day from what is stored, asking Open-Meteo nothing',
+    async ({ city }) => {
+      // Given
+      const clock = fixedClock('2026-10-18T09:00:00Z');
+      const app = await createTestApp({ clock });
+      const first = await requestActivityRanking(app, { city });
+      clock.advanceTo('2026-10-18T15:00:00Z');
 
-    // When
-    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+      // When
+      const response = await requestActivityRanking(app, { city });
 
-    // Then
-    expect(response.errors).toBeUndefined();
-    // The stored days score as the fetched ones did.
-    expect(response.data?.activityRanking.activities).toEqual(
-      first.data?.activityRanking.activities,
-    );
-    // The first request's geocoding, forecast and marine forecast, and nothing since; the last two
-    // are asked at once, in no set order.
-    expect(app.openMeteo.requests.map(({ pathname }) => pathname).toSorted()).toEqual([
-      '/v1/forecast',
-      '/v1/marine',
-      '/v1/search',
-    ]);
-  });
+      // Then
+      expect(response.errors).toBeUndefined();
+      // The stored days score as the fetched ones did.
+      expect(response.data?.activityRanking.activities).toEqual(
+        first.data?.activityRanking.activities,
+      );
+      // The first request's geocoding, forecast and marine forecast, and nothing since; the last
+      // two are asked at once, in no set order.
+      expect(app.openMeteo.requests.map(({ pathname }) => pathname).toSorted()).toEqual([
+        '/v1/forecast',
+        '/v1/marine',
+        '/v1/search',
+      ]);
+    },
+  );
 
   it('scores skiing from the snow stored for a resort, nothing where it is thin, 10 in a gale', async () => {
     // Given
@@ -428,6 +482,23 @@ describe('activityRanking', () => {
     // gusts of 63.4 km/h.
     const skiing = forecastOf(response, 'SKIING');
     expect(skiing?.days.map(({ score }) => score)).toEqual([0, 0, 0, 42, 10, 0, 0]);
+  });
+
+  it('scores surfing from the sea stored for a coastal city, 10 on days of waves over 4 m', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Biarritz' });
+    clock.advanceTo('2026-10-18T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Biarritz' });
+
+    // Then
+    // Worked from the recording: waves of 3.56, 3.44, 5.68, 4.62, 3.3, 3.24 and 2.2 m, on swells
+    // of 8.95 to 11.5 s, in winds of 13 to 53.5 km/h and highs of 16.2 to 20.6 °C; no storm.
+    const surfing = forecastOf(response, 'SURFING');
+    expect(surfing?.days.map(({ score }) => score)).toEqual([44, 46, 10, 10, 46, 62, 82]);
   });
 
   it.each([{ days: 7 }, { days: 1 }] as const)(
@@ -463,6 +534,37 @@ describe('activityRanking', () => {
 
     // Then
     expect(app.openMeteo.requestsTo('forecast')).toHaveLength(2);
+  });
+
+  it('fetches the week of an inland place again without asking Marine, which found no sea there', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-19T09:00:00Z');
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect({
+      forecast: app.openMeteo.requestsTo('forecast').length,
+      marine: app.openMeteo.requestsTo('marine').length,
+    }).toEqual({ forecast: 2, marine: 1 });
+  });
+
+  it("fetches the week again when a day of a coastal place's sea is missing, its weather stored", async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+    await requestActivityRanking(app, { city: 'Biarritz' });
+    const [biarritz] = await readLocations(app.db);
+    await storeMarineDayMissing(app.db, biarritz!, '2026-10-21');
+
+    // When
+    await requestActivityRanking(app, { city: 'Biarritz' });
+
+    // Then
+    expect(app.openMeteo.requestsTo('marine')).toHaveLength(2);
   });
 
   it('keeps one row per date when the week fetched again overlaps the stored one', async () => {

@@ -1,6 +1,6 @@
 // The seams the use case needs, implemented outside this module (docs/architecture/ports.md).
 
-import type { DailyWeather } from '../scoring/index.js';
+import type { DailyMarine, DailyWeather } from '../scoring/index.js';
 import type { LocalDate } from '../shared/index.js';
 
 /** Says what time it is, so that "now" is the same instant for everything a request does. */
@@ -22,6 +22,8 @@ export type Location = {
   elevationM: number | null;
   /** IANA, such as Europe/Paris: the calendar the place's days are counted in. */
   timezone: string;
+  /** Whether Marine forecasts a sea at the place; null until Marine has been asked. */
+  hasMarine: boolean | null;
 };
 
 /** Turns the name a client sent, and the country it may be limited to, into one place. */
@@ -33,6 +35,8 @@ export interface LocationResolver {
 export type StoredForecast = {
   /** In date order. */
   days: DailyWeather[];
+  /** The days of the place's sea, in date order; null for a place without a sea forecast. */
+  marineDays: DailyMarine[] | null;
   /** The latest successful fetch of the place's forecast. */
   fetchedAt: Date;
 };

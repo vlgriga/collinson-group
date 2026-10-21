@@ -1,5 +1,10 @@
 /** The activities days are scored for, in the order of the API's Activity enum. */
-export const ACTIVITIES = ['SKIING', 'OUTDOOR_SIGHTSEEING', 'INDOOR_SIGHTSEEING'] as const;
+export const ACTIVITIES = [
+  'SKIING',
+  'SURFING',
+  'OUTDOOR_SIGHTSEEING',
+  'INDOOR_SIGHTSEEING',
+] as const;
 
 export type Activity = (typeof ACTIVITIES)[number];
 

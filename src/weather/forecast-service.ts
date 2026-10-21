@@ -26,11 +26,12 @@ export class ForecastService implements ForecastFetcher {
   async fetch(location: Location, dates: readonly LocalDate[]): Promise<StoredForecast> {
     const [{ days, payload }, marine] = await Promise.all([
       this.#forecastClient.daily(location, dates),
-      this.#marineClient.daily(location, dates),
+      // Marine found no sea here once, and a place does not move (docs/design/activity-ranking.md).
+      location.hasMarine === false ? undefined : this.#marineClient.daily(location, dates),
     ]);
     const fetchedAt = this.#clock.now();
     await this.#repository.saveFetch({ locationId: location.id, days, payload, marine, fetchedAt });
     // What was just stored, rather than read back.
-    return { days, fetchedAt };
+    return { days, marineDays: marine?.days ?? null, fetchedAt };
   }
 }

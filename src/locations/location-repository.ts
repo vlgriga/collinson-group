@@ -15,6 +15,7 @@ const LOCATION = {
   longitude: locations.longitude,
   elevationM: locations.elevationM,
   timezone: locations.timezone,
+  hasMarine: locations.hasMarine,
 };
 
 /** A name as it was geocoded, and the country the search was limited to, if one. */
