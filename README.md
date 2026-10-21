@@ -38,9 +38,10 @@ query {
 ```
 
 `countryCode` and `days` are optional. The service's own failures carry a code in
-`extensions.code`: `BAD_USER_INPUT`, `LOCATION_NOT_FOUND`, or `UPSTREAM_UNAVAILABLE` when the
-stored week has run out and Open-Meteo fails. A query the schema refuses gets GraphQL's own
-validation error, and an unexpected failure `INTERNAL_SERVER_ERROR`.
+`extensions.code`: `BAD_USER_INPUT`, `LOCATION_NOT_FOUND`, or `UPSTREAM_UNAVAILABLE` when
+Open-Meteo fails on a request that needs it: a name not yet geocoded, or a stored week that has run
+out. A query the schema refuses gets GraphQL's own validation error, and an unexpected failure
+`INTERNAL_SERVER_ERROR`.
 
 To work on it, run the checks and the tests (they start their own Postgres in containers, so
 Docker must be running): [getting started](docs/getting-started.md).
@@ -107,9 +108,9 @@ answers allow re-extraction if a column is added.
 stored days cover today and the next six; when they don't, that week is fetched inline, upserted
 and answered. The week is fetched on a place's first request, and again on the first request after
 its local midnight; there is no scheduled fetch, so a place nobody asks about is not fetched again.
-Marine is not asked again where it found no sea. A repeated request for a name already asked for
-does not reach Open-Meteo: locally, around 10 ms against about a second for a cold one. The cost is
-that a stored forecast can be up to a day old.
+Marine is not asked again where it found no sea. A repeated request on the same day, for a name
+already asked for, does not reach Open-Meteo: locally, around 10 ms against about a second for a
+cold one. The cost is that a stored forecast can be up to a day old.
 
 **Refresh, as designed: hybrid** ([ADR 0002](docs/decisions/0002-hybrid-refresh-strategy.md),
 [design](docs/design/refresh.md)):
@@ -130,7 +131,7 @@ Upstream calls then grow with the number of active places, not with traffic.
 |---|---|---|
 | Activity ranking | Built: input validation, place resolution and its cache, Forecast and Marine ingest, the four scorers, ordering, named errors | [activity-ranking.md](docs/design/activity-ranking.md) |
 | Refresh | Designed: freshness window, `stale`, background refresh, de-duplication | [refresh.md](docs/design/refresh.md) |
-| Resilience | Designed: timeouts and retries; stored data served, marked outdated, when Open-Meteo is down. Today an Open-Meteo failure on a request that needs a fetch answers `UPSTREAM_UNAVAILABLE` | [resilience.md](docs/design/resilience.md) |
+| Resilience | Designed: timeouts and retries; stored data served, marked outdated, when Open-Meteo is down. Today an Open-Meteo failure on a request that needs it answers `UPSTREAM_UNAVAILABLE` | [resilience.md](docs/design/resilience.md) |
 | Operations | Designed: query depth and cost limits, rate limiting, readiness, graceful shutdown, structured logs. Today the API has GraphQL Yoga's `/health` only | [operations.md](docs/design/operations.md) |
 
 The libraries the designed features use (pg-boss, GraphQL Armor, the rate limiter, pino) are

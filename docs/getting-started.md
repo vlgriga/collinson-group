@@ -33,7 +33,7 @@ make dev-api      # http://localhost:4000/graphql, in watch mode
 make dev-worker   # in another terminal: the refresh jobs, once Refresh is built
 ```
 
-Or run the whole stack in containers: `docker compose up --build`.
+Or run what exists of the stack in containers: `docker compose up --build`.
 
 A new worktree from `make start` shares `.env` and the Postgres from `docker compose` with the main
 checkout, but not `node_modules`: run `make install` in it first.
