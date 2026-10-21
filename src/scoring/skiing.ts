@@ -1,20 +1,19 @@
 import { SKIING } from '../config/index.js';
 import type { DailyWeather, DayScore } from './daily-weather.js';
-import { dayScore, scoreFactor, scoreSunshine, wholeDegrees, type Cap } from './factors.js';
+import {
+  dayScore,
+  scoreFactor,
+  scoreSunshine,
+  unrated,
+  wholeDegrees,
+  type Cap,
+} from './factors.js';
 
 export function scoreSkiing(day: DailyWeather): DayScore {
   const { factors, caps } = SKIING;
   const { snowDepthMaxCm, windGustsMaxKmh } = day;
-  // A cap cannot be ruled out without its value, and a day that might be pointless or dangerous
-  // is not rated.
   if (snowDepthMaxCm === null || windGustsMaxKmh === null) {
-    return {
-      score: 0,
-      reasons: [
-        ...(snowDepthMaxCm === null ? ['Snow depth missing from the forecast'] : []),
-        ...(windGustsMaxKmh === null ? ['Wind gusts missing from the forecast'] : []),
-      ],
-    };
+    return unrated({ 'Snow depth': snowDepthMaxCm, 'Wind gusts': windGustsMaxKmh });
   }
   const applied: Cap[] = [];
   if (snowDepthMaxCm < caps.noSnow.belowCm) {

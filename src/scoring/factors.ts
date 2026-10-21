@@ -14,6 +14,20 @@ export type Scored = { weight: number; subScore: number; reason: string };
 /** A condition that limits the day's score whatever the factors make of it. */
 export type Cap = { maxScore: number; reason: string };
 
+/**
+ * A day whose caps cannot all be ruled out, each value a cap reads named in `values`: a cap
+ * cannot be ruled out without its value, and a day that might be pointless or dangerous is not
+ * rated.
+ */
+export function unrated(values: Record<string, number | null>): DayScore {
+  return {
+    score: 0,
+    reasons: Object.entries(values)
+      .filter(([, value]) => value === null)
+      .map(([name]) => `${name} missing from the forecast`),
+  };
+}
+
 /** `value` on the factor's curve; undefined when the forecast has no value. */
 export function scoreFactor(
   factor: Factor,

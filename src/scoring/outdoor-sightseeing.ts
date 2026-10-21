@@ -1,19 +1,19 @@
 import { OUTDOOR_SIGHTSEEING } from '../config/index.js';
 import type { DailyWeather, DayScore } from './daily-weather.js';
-import { dayScore, scoreFactor, scoreSunshine, wholeDegrees, type Cap } from './factors.js';
+import {
+  dayScore,
+  scoreFactor,
+  scoreSunshine,
+  unrated,
+  wholeDegrees,
+  type Cap,
+} from './factors.js';
 
 export function scoreOutdoorSightseeing(day: DailyWeather): DayScore {
   const { factors, caps } = OUTDOOR_SIGHTSEEING;
   const { precipitationMm, weatherCode } = day;
-  // A cap cannot be ruled out without its value, and a day that might be dangerous is not rated.
   if (precipitationMm === null || weatherCode === null) {
-    return {
-      score: 0,
-      reasons: [
-        ...(precipitationMm === null ? ['Precipitation missing from the forecast'] : []),
-        ...(weatherCode === null ? ['Weather code missing from the forecast'] : []),
-      ],
-    };
+    return unrated({ Precipitation: precipitationMm, 'Weather code': weatherCode });
   }
   const applied: Cap[] = [];
   if (caps.thunderstorm.weatherCodes.some((code) => code === weatherCode)) {

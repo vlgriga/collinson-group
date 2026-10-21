@@ -105,6 +105,13 @@ export const OUTDOOR_SIGHTSEEING = {
   },
 } as const satisfies OutdoorSightseeingRules;
 
+/**
+ * The least snow on the ground there is anything to ski on, in cm: under it grass and rocks show
+ * through. Where the no-snow cap stops and the snow depth curve starts, so that the two cannot
+ * drift apart.
+ */
+const SKIABLE_SNOW_CM = 10;
+
 type SkiingRules = {
   readonly factors: Record<
     'snowDepth' | 'freshSnow' | 'temperature' | 'gusts' | 'sunshine',
@@ -121,10 +128,10 @@ export const SKIING = {
     snowDepth: {
       // Without a base to ski on nothing else matters, so it weighs the most.
       weight: 0.4,
-      // The day's deepest, in cm: 10 cm barely covers grass and rocks; from a metre every run,
-      // off-piste included, has enough.
+      // The day's deepest, in cm: from a bare cover to a metre, where every run, off-piste
+      // included, has enough.
       curve: [
-        { at: 10, score: 0 },
+        { at: SKIABLE_SNOW_CM, score: 0 },
         { at: 100, score: 1 },
       ],
     },
@@ -171,8 +178,8 @@ export const SKIING = {
   },
   caps: {
     noSnow: {
-      // Under 10 cm grass and rocks show through: there is nothing to ski on, whatever the sky.
-      belowCm: 10,
+      // Nothing to ski on, whatever the sky.
+      belowCm: SKIABLE_SNOW_CM,
       maxScore: 0,
     },
     gusts: {
