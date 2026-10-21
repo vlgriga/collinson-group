@@ -7,15 +7,23 @@ export type FixedClock = Clock & {
 
 /** A clock that stays at the instant it is given, until the test moves it on. */
 export function fixedClock(instant: string): FixedClock {
-  let now = new Date(instant);
+  let now = readInstant(instant);
   return {
     now: () => new Date(now),
     advanceTo: (later) => {
-      const next = new Date(later);
-      if (Number.isNaN(next.getTime()) || next < now) {
-        throw new Error(`The clock moves on only: ${later} is not after ${now.toISOString()}`);
+      const next = readInstant(later);
+      if (next < now) {
+        throw new Error(`The clock does not go back: ${later} is before ${now.toISOString()}`);
       }
       now = next;
     },
   };
+}
+
+function readInstant(instant: string): Date {
+  const date = new Date(instant);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`Not an instant: ${instant}`);
+  }
+  return date;
 }
