@@ -15,9 +15,7 @@ describe('Forecast ingest', () => {
     // Then
     // The highest of each day's hours in the recording, from 0.05 m to 0.12 m.
     const days = await readDailyWeather(app.db);
-    expect(days.map(({ snowDepthMaxCm }) => snowDepthMaxCm)).toEqual(
-      [5, 5, 6, 12, 12, 8, 5].map((cm) => expect.closeTo(cm, 9) as unknown),
-    );
+    expect(days.map(({ snowDepthMaxCm }) => snowDepthMaxCm)).toEqual([5, 5, 6, 12, 12, 8, 5]);
   });
 
   it("stores the day's highest temperature, its snowfall in cm and its strongest gust", async () => {

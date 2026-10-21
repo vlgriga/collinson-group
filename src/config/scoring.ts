@@ -112,6 +112,12 @@ export const OUTDOOR_SIGHTSEEING = {
  */
 const SKIABLE_SNOW_CM = 10;
 
+/**
+ * The gusts in km/h past which lifts start to stop. Where the gusts curve ends and their cap
+ * begins, so that the two cannot drift apart.
+ */
+const LIFT_STOPPING_GUSTS_KMH = 60;
+
 type SkiingRules = {
   readonly factors: Record<
     'snowDepth' | 'freshSnow' | 'temperature' | 'gusts' | 'sunshine',
@@ -160,10 +166,11 @@ export const SKIING = {
     gusts: {
       // Gusts, not the mean wind, are what rock a chairlift and blow skiers about.
       weight: 0.15,
-      // The day's strongest, in km/h: up to 30 the lifts hardly notice; at 60 they start to stop.
+      // The day's strongest, in km/h: up to 30 the lifts hardly notice; nothing is left of the
+      // factor where they start to stop.
       curve: [
         { at: 30, score: 1 },
-        { at: 60, score: 0 },
+        { at: LIFT_STOPPING_GUSTS_KMH, score: 0 },
       ],
     },
     sunshine: {
@@ -183,8 +190,8 @@ export const SKIING = {
       maxScore: 0,
     },
     gusts: {
-      // Past 60 km/h chairlifts and gondolas stop for safety, and what runs is exposed.
-      overKmh: 60,
+      // Past it chairlifts and gondolas stop for safety, and what runs is exposed.
+      overKmh: LIFT_STOPPING_GUSTS_KMH,
       maxScore: 10,
     },
   },

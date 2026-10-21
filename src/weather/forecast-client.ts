@@ -117,6 +117,10 @@ function hours(seconds: number | null | undefined): number | null {
   return seconds == null ? null : seconds / SECONDS_PER_HOUR;
 }
 
+/**
+ * To the cm Open-Meteo gives snow depth in (0.01 m): the product alone carries binary noise, such
+ * as 28.999999999999996 for 0.29 m, which a threshold would see.
+ */
 function centimetres(metres: number | null | undefined): number | null {
-  return metres == null ? null : metres * CM_PER_M;
+  return metres == null ? null : Math.round(metres * CM_PER_M);
 }
