@@ -30,7 +30,7 @@ Once it is green:
 make install      # npm ci; also installs the git hooks (husky)
 make migrate      # start Postgres from docker compose and apply the migrations
 make dev-api      # http://localhost:4000/graphql, in watch mode
-make dev-worker   # in another terminal: the refresh jobs
+make dev-worker   # in another terminal: the refresh jobs, once Refresh is built
 ```
 
 Or run the whole stack in containers: `docker compose up --build`.
