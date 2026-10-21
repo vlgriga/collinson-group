@@ -17,6 +17,20 @@ describe('orderActivities', () => {
     expect(ordered.map(({ activity }) => activity)).toEqual(['OUTDOOR_SIGHTSEEING', 'SKIING']);
   });
 
+  it('lists an activity without a weekly score last, below one that scores 0, though the enum has it first', () => {
+    // Given
+    const activities = [
+      { activity: 'SKIING', score: null },
+      { activity: 'INDOOR_SIGHTSEEING', score: 0 },
+    ] as const;
+
+    // When
+    const ordered = orderActivities(activities);
+
+    // Then
+    expect(ordered.map(({ activity }) => activity)).toEqual(['INDOOR_SIGHTSEEING', 'SKIING']);
+  });
+
   it.each([
     { first: 'SKIING', second: 'OUTDOOR_SIGHTSEEING' },
     { first: 'OUTDOOR_SIGHTSEEING', second: 'INDOOR_SIGHTSEEING' },
