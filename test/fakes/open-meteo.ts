@@ -168,7 +168,9 @@ export class OpenMeteoFake {
    * the hours as `hoursUrl` asks, when it is given.
    */
   #forecast(url: URL, hoursUrl: URL = url): JsonBodyType {
-    const { daily, hourly, ...rest } = this.#place(url).forecast;
+    const { daily: recordedDays, hourly: recordedHours, ...rest } = this.#place(url).forecast;
+    const daily = asked(url, 'daily', recordedDays);
+    const hourly = asked(url, 'hourly', recordedHours);
     // Each hour of a recorded day keeps its time of day, on the date that takes the day's place.
     const hourDates = datesBetween(param(hoursUrl, 'start_date'), param(hoursUrl, 'end_date'));
     const dateFor = new Map(
@@ -191,7 +193,7 @@ export class OpenMeteoFake {
   /** The recorded days of the place's sea, dated from `start_date` to `end_date` as asked. */
   #marine(url: URL): JsonBodyType {
     const { daily, ...rest } = this.#place(url).marine;
-    return { ...rest, daily: rebaseDays(url, daily) };
+    return { ...rest, daily: rebaseDays(url, asked(url, 'daily', daily)) };
   }
 
   /** The place at the coordinates `url` asks for; a place not recorded fails the test. */
@@ -206,6 +208,27 @@ export class OpenMeteoFake {
     }
     return place;
   }
+}
+
+/**
+ * The recorded series of the variables `url` asks for at `step`, with their times, as Open-Meteo
+ * answers no others; a variable not recorded fails the test, as Open-Meteo refuses one it does not
+ * know.
+ */
+function asked(
+  url: URL,
+  step: 'daily' | 'hourly',
+  recorded: z.infer<typeof SERIES>,
+): z.infer<typeof SERIES> {
+  const variables = param(url, step).split(',');
+  const unknown = variables.filter((variable) => !(variable in recorded));
+  if (unknown.length > 0) {
+    throw new Error(`No recording of ${step} ${unknown.join(', ')}`);
+  }
+  return {
+    ...Object.fromEntries(Object.entries(recorded).filter(([key]) => variables.includes(key))),
+    time: recorded.time,
+  };
 }
 
 /** The recorded days, dated from `start_date` to `end_date` as `url` asks (ADR 0009). */
