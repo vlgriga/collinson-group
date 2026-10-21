@@ -62,7 +62,9 @@ for (const place of SEARCHES) {
       }),
     );
   }
-  if (place.forecast === false) {
+  // Its geocoding is read below only for a forecast asked for, so that naming one place does not
+  // need the recordings of every other.
+  if (place.forecast === false || !(wanted('forecast') || wanted('marine'))) {
     continue;
   }
 
