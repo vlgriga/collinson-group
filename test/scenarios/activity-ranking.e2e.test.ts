@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Activity } from '../../src/ranking/index.js';
 import { createTestApp } from '../app.js';
 import { fixedClock } from '../fakes/clock.js';
 import { readLocationAliases, readLocations } from '../locations/factories/location.js';
@@ -573,7 +574,7 @@ const SOME_REASON: unknown = expect.arrayContaining([expect.any(String) as unkno
 const ONE_OF_THE_WEEK: unknown = expect.toBeOneOf(WEEK);
 
 /** The answer's forecast for one activity, wherever the order puts it. */
-function forecastOf(response: ActivityRankingResponse, activity: string) {
+function forecastOf(response: ActivityRankingResponse, activity: Activity) {
   return response.data?.activityRanking.activities.find(
     (forecast) => forecast.activity === activity,
   );
