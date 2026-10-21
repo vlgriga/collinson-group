@@ -17,7 +17,8 @@ export type Scalars = {
 
 /** What the days are scored for. */
 export type Activity =
-  | 'OUTDOOR_SIGHTSEEING';
+  | 'OUTDOOR_SIGHTSEEING'
+  | 'SKIING';
 
 /** How good the coming days are for one activity. */
 export type ActivityForecast = {
@@ -35,7 +36,10 @@ export type ActivityForecast = {
 /** The coming days of one place, scored per activity. */
 export type ActivityRanking = {
   __typename?: 'ActivityRanking';
-  /** Each activity with its days and its weekly score. */
+  /**
+   * Each activity with its days and its weekly score, the best weekly score first; on a tie, in
+   * the order of Activity.
+   */
   activities: Array<ActivityForecast>;
   /**
    * When the forecast the days are scored from was fetched from Open-Meteo: the latest successful
