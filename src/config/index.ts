@@ -4,6 +4,7 @@ export {
   OUTDOOR_SIGHTSEEING,
   RATING_THRESHOLDS,
   SKIING,
+  SURFING,
   type Curve,
   type CurvePoint,
   type Factor,
