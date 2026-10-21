@@ -72,13 +72,17 @@ export class ForecastRepository implements ForecastReader {
         .values(days.map((day) => ({ locationId, ...day })))
         .onConflictDoUpdate({
           target: [dailyWeather.locationId, dailyWeather.date],
+          // Checked against what is read, so that no value read is left un-overwritten.
           set: {
-            // From the same list as what is read, so that no value read is left un-overwritten.
-            ...Object.fromEntries(
-              Object.entries(DAY_VALUES).map(([field, column]) => [field, excluded(column)]),
-            ),
+            precipitationMm: excluded(dailyWeather.precipitationMm),
+            apparentTemperatureMaxC: excluded(dailyWeather.apparentTemperatureMaxC),
+            sunshineDurationH: excluded(dailyWeather.sunshineDurationH),
+            daylightDurationH: excluded(dailyWeather.daylightDurationH),
+            windSpeedMaxKmh: excluded(dailyWeather.windSpeedMaxKmh),
+            uvIndexMax: excluded(dailyWeather.uvIndexMax),
+            weatherCode: excluded(dailyWeather.weatherCode),
             updatedAt: sql`now()`,
-          },
+          } satisfies Record<keyof typeof DAY_VALUES | 'updatedAt', SQL>,
         });
       await tx.insert(forecastFetches).values({
         locationId,
