@@ -26,14 +26,20 @@ export type OpenMeteoFailure =
    * week without today, as a provider with no forecast for the place's today yet answers
    * (ADR 0009).
    */
-  | { dates: { from: string; to: string } };
+  | { dates: { from: string; to: string } }
+  /** The recorded forecast as asked, its hours those of the dates from `from` to `to` instead. */
+  | { hourDates: { from: string; to: string } };
 
 const GEOCODING = z.looseObject({
   results: z
     .tuple([z.looseObject({ latitude: z.number(), longitude: z.number() })])
     .rest(z.unknown()),
 });
-const FORECAST = z.looseObject({ daily: z.record(z.string(), z.array(z.unknown())) });
+/** Variables of one time step, each a value per `time`. */
+const SERIES = z
+  .record(z.string(), z.array(z.unknown()))
+  .and(z.object({ time: z.array(z.string()) }));
+const FORECAST = z.looseObject({ daily: SERIES, hourly: SERIES });
 
 type Search = {
   /** Lower-cased: Open-Meteo matches a name without regard to case. */
@@ -81,7 +87,7 @@ export class OpenMeteoFake {
       this.#answer('geocoding', request, (url) => this.#geocode(url)),
     ),
     http.get(ENDPOINTS.forecast, ({ request }) =>
-      this.#answer('forecast', request, (url) => this.#forecast(url)),
+      this.#answer('forecast', request, (url, hoursUrl) => this.#forecast(url, hoursUrl)),
     ),
   );
 
@@ -103,7 +109,11 @@ export class OpenMeteoFake {
     return this.requests.filter((url) => `${url.origin}${url.pathname}` === ENDPOINTS[api]);
   }
 
-  #answer(api: OpenMeteoApi, request: Request, answer: (url: URL) => JsonBodyType): Response {
+  #answer(
+    api: OpenMeteoApi,
+    request: Request,
+    answer: (url: URL, hoursUrl?: URL) => JsonBodyType,
+  ): Response {
     const url = new URL(request.url);
     this.requests.push(url);
     const failure = this.#failures.get(api);
@@ -115,6 +125,9 @@ export class OpenMeteoFake {
     }
     if ('dates' in failure) {
       return HttpResponse.json(answer(askingFor(url, failure.dates)));
+    }
+    if ('hourDates' in failure) {
+      return HttpResponse.json(answer(url, askingFor(url, failure.hourDates)));
     }
     if ('status' in failure) {
       // The shape Open-Meteo gives its own errors.
@@ -139,8 +152,11 @@ export class OpenMeteoFake {
     return search?.geocoding ?? { generationtime_ms: 0.1 };
   }
 
-  /** The recorded days, dated from `start_date` to `end_date` as asked (ADR 0009). */
-  #forecast(url: URL): JsonBodyType {
+  /**
+   * The recorded days and their hours, dated from `start_date` to `end_date` as asked (ADR 0009);
+   * the hours as `hoursUrl` asks, when it is given.
+   */
+  #forecast(url: URL, hoursUrl: URL = url): JsonBodyType {
     const place = this.#forecasts.find(
       ({ latitude, longitude }) =>
         latitude === Number(url.searchParams.get('latitude')) &&
@@ -150,18 +166,30 @@ export class OpenMeteoFake {
       throw new Error(`No recorded forecast for ${url.search}`);
     }
     const dates = datesBetween(param(url, 'start_date'), param(url, 'end_date'));
-    const { daily, ...rest } = place.forecast;
+    const { daily, hourly, ...rest } = place.forecast;
     const rebased = Object.fromEntries(
       Object.entries(daily).map(([key, values]) => [
         key,
         key === 'time' ? dates : values.slice(0, dates.length),
       ]),
     );
-    // The recorded hours keep the recording's dates; nothing asks for them yet.
-    const dailyOnly = Object.fromEntries(
-      Object.entries(rest).filter(([key]) => !key.startsWith('hourly')),
+    // Each hour of a recorded day keeps its time of day, on the date that takes the day's place.
+    const hourDates = datesBetween(param(hoursUrl, 'start_date'), param(hoursUrl, 'end_date'));
+    const dateFor = new Map(
+      daily.time.slice(0, hourDates.length).map((date, day) => [date, hourDates[day]]),
     );
-    return { ...dailyOnly, daily: rebased };
+    const hours = hourly.time.flatMap((time, hour) => {
+      const [date = '', timeOfDay = ''] = time.split('T');
+      const asked = dateFor.get(date);
+      return asked === undefined ? [] : [{ hour, time: `${asked}T${timeOfDay}` }];
+    });
+    const rebasedHours = Object.fromEntries(
+      Object.entries(hourly).map(([key, values]) => [
+        key,
+        key === 'time' ? hours.map(({ time }) => time) : hours.map(({ hour }) => values[hour]),
+      ]),
+    );
+    return { ...rest, daily: rebased, hourly: rebasedHours };
   }
 }
 

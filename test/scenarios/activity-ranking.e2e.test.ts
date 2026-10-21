@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Activity } from '../../src/ranking/index.js';
 import { createTestApp } from '../app.js';
 import { fixedClock } from '../fakes/clock.js';
 import { readLocationAliases, readLocations } from '../locations/factories/location.js';
@@ -8,7 +9,7 @@ import {
   readForecastFetches,
   storeDayMissing,
 } from '../weather/factories/forecast.js';
-import { requestActivityRanking } from './support.js';
+import { requestActivityRanking, type ActivityRankingResponse } from './support.js';
 
 describe('activityRanking', () => {
   it('answers with the place the geocoder resolved the city to', async () => {
@@ -64,17 +65,18 @@ describe('activityRanking', () => {
     });
   });
 
-  it('scores outdoor sightseeing for the 7 days from today, each with a rating and a reason', async () => {
-    // Given
-    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+  it.each(['SKIING', 'OUTDOOR_SIGHTSEEING'] as const)(
+    'scores %s for the 7 days from today, each with a rating and a reason',
+    async (activity) => {
+      // Given
+      const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
 
-    // When
-    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+      // When
+      const response = await requestActivityRanking(app, { city: 'Chamonix' });
 
-    // Then
-    expect(response.data?.activityRanking.activities).toEqual([
-      {
-        activity: 'OUTDOOR_SIGHTSEEING',
+      // Then
+      expect(forecastOf(response, activity)).toEqual({
+        activity,
         score: A_SCORE,
         bestDay: ONE_OF_THE_WEEK,
         days: WEEK.map((date) => ({
@@ -83,7 +85,25 @@ describe('activityRanking', () => {
           rating: A_RATING,
           reasons: SOME_REASON,
         })),
-      },
+      });
+    },
+  );
+
+  it('lists the activities best weekly score first: outdoor sightseeing before skiing without snow', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    // The recording has no snow on the ground, so every skiing day scores 0; SKIING comes first in
+    // the enum, so only a higher score puts outdoor sightseeing before it.
+    expect(
+      response.data?.activityRanking.activities.map(({ activity, score }) => ({ activity, score })),
+    ).toEqual([
+      { activity: 'OUTDOOR_SIGHTSEEING', score: A_SCORE },
+      { activity: 'SKIING', score: 0 },
     ]);
   });
 
@@ -95,7 +115,7 @@ describe('activityRanking', () => {
     const response = await requestActivityRanking(app, { city: 'Chamonix', days: 3 });
 
     // Then
-    const [outdoor] = response.data?.activityRanking.activities ?? [];
+    const outdoor = forecastOf(response, 'OUTDOOR_SIGHTSEEING');
     const scores = outdoor?.days.map(({ score }) => score) ?? [];
     // In the recording, the week's best day is the 7th and its mean differs from the 3 days'.
     expect(outdoor).toEqual({
@@ -384,6 +404,24 @@ describe('activityRanking', () => {
     ]);
   });
 
+  it('scores skiing from the snow stored for a resort, nothing where it is thin, 10 in a gale', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Val Thorens' });
+    clock.advanceTo('2026-10-18T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Val Thorens' });
+
+    // Then
+    // Worked from the recording: under 10 cm on all but the 4th and 5th days; the 4th has 12 cm,
+    // 6.3 cm fresh, a high of -3 °C, gusts of 45 km/h and sun for 31% of daylight; the 5th has
+    // gusts of 63.4 km/h.
+    const skiing = forecastOf(response, 'SKIING');
+    expect(skiing?.days.map(({ score }) => score)).toEqual([0, 0, 0, 42, 10, 0, 0]);
+  });
+
   it.each([{ days: 7 }, { days: 1 }] as const)(
     'fetches the week from the new today once the stored one is a day short, asked for days: $days',
     async ({ days }) => {
@@ -465,7 +503,7 @@ describe('activityRanking', () => {
     const response = await requestActivityRanking(app, { city: 'Chamonix' });
 
     // Then
-    const [outdoor] = response.data?.activityRanking.activities ?? [];
+    const outdoor = forecastOf(response, 'OUTDOOR_SIGHTSEEING');
     expect(outdoor?.days.map(({ date }) => date)).toEqual([...WEEK.slice(1), '2026-10-25']);
   });
 });
@@ -520,6 +558,11 @@ const UPSTREAM_FAILURES = [
     failing: 'a week without its last day',
     failure: { dates: { from: '2026-10-18', to: '2026-10-23' } },
   },
+  {
+    api: 'forecast',
+    failing: 'the hours of a week a day later than its days',
+    failure: { hourDates: { from: '2026-10-19', to: '2026-10-25' } },
+  },
 ] as const;
 
 const A_SCORE: unknown = expect.toSatisfy(
@@ -529,3 +572,10 @@ const A_SCORE: unknown = expect.toSatisfy(
 const A_RATING: unknown = expect.toBeOneOf(['POOR', 'FAIR', 'GOOD', 'EXCELLENT']);
 const SOME_REASON: unknown = expect.arrayContaining([expect.any(String) as unknown]);
 const ONE_OF_THE_WEEK: unknown = expect.toBeOneOf(WEEK);
+
+/** The answer's forecast for one activity, wherever the order puts it. */
+function forecastOf(response: ActivityRankingResponse, activity: Activity) {
+  return response.data?.activityRanking.activities.find(
+    (forecast) => forecast.activity === activity,
+  );
+}

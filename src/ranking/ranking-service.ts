@@ -1,7 +1,11 @@
 import {
+  ACTIVITIES,
+  orderActivities,
   rate,
   scoreOutdoorSightseeing,
+  scoreSkiing,
   summarizeWeek,
+  type Activity,
   type DailyWeather,
   type DayScore,
   type Rating,
@@ -24,8 +28,6 @@ export type RankingRequest = {
   days: number;
 };
 
-export type Activity = 'OUTDOOR_SIGHTSEEING';
-
 export type ActivityDay = {
   date: LocalDate;
   score: number;
@@ -44,7 +46,13 @@ export type Ranking = {
   location: Location;
   /** When the forecast the days are scored from was fetched. */
   forecastFetchedAt: Date;
+  /** The best weekly score first. */
   activities: ActivityForecast[];
+};
+
+const SCORERS: Record<Activity, (day: DailyWeather) => DayScore> = {
+  SKIING: scoreSkiing,
+  OUTDOOR_SIGHTSEEING: scoreOutdoorSightseeing,
 };
 
 /** Answers a ranking request: the place a city resolves to, and its coming days per activity. */
@@ -74,7 +82,9 @@ export class RankingService {
     return {
       location,
       forecastFetchedAt: forecast.fetchedAt,
-      activities: [forecastActivity('OUTDOOR_SIGHTSEEING', days, scoreOutdoorSightseeing)],
+      activities: orderActivities(
+        ACTIVITIES.map((activity) => forecastActivity(activity, days, SCORERS[activity])),
+      ),
     };
   }
 

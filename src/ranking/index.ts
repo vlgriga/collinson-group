@@ -8,9 +8,9 @@ export type {
   LocationResolver,
   StoredForecast,
 } from './ports.js';
+export type { Activity } from '../scoring/index.js';
 export {
   RankingService,
-  type Activity,
   type ActivityDay,
   type ActivityForecast,
   type Ranking,

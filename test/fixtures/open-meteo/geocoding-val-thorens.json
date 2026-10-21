@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "id": 6544556,
+      "name": "Val Thorens",
+      "latitude": 45.29777,
+      "longitude": 6.58377,
+      "elevation": 2333,
+      "feature_code": "PPLL",
+      "country_code": "FR",
+      "admin1_id": 11071625,
+      "admin2_id": 2975517,
+      "admin3_id": 3038265,
+      "admin4_id": 6442887,
+      "timezone": "Europe/Paris",
+      "population": 2500,
+      "country_id": 3017382,
+      "country": "France",
+      "admin1": "Auvergne-Rhône-Alpes",
+      "admin2": "Savoy",
+      "admin3": "Arrondissement of Albertville",
+      "admin4": "Les Belleville"
+    }
+  ],
+  "generationtime_ms": 0.12612343
+}

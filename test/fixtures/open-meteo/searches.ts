@@ -17,4 +17,6 @@ export const SEARCHES: readonly {
   { name: 'Paris', file: 'paris' },
   // Paris, Texas: the country code changes the top match.
   { name: 'Paris', countryCode: 'US', file: 'paris-us' },
+  // A ski resort with snow on the ground that changes within a day.
+  { name: 'Val Thorens', file: 'val-thorens' },
 ];
