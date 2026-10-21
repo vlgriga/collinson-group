@@ -298,6 +298,17 @@ describe('activityRanking', () => {
     expect((await readDailyWeather(app.db)).map(({ date }) => date)).toEqual(WEEK);
   });
 
+  it('states when the forecast it answers from was fetched', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.data?.activityRanking.forecastFetchedAt).toBe('2026-10-18T09:00:00.000Z');
+  });
+
   it('answers a second request the same day from the stored forecast, asking Open-Meteo nothing', async () => {
     // Given
     const clock = fixedClock('2026-10-18T09:00:00Z');

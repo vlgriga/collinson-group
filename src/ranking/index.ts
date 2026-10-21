@@ -6,6 +6,7 @@ export type {
   ForecastReader,
   Location,
   LocationResolver,
+  StoredForecast,
 } from './ports.js';
 export {
   RankingService,

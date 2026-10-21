@@ -1,8 +1,8 @@
-import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
 import { dailyWeather, forecastFetches, type Database } from '../db/index.js';
-import type { DailyWeather, ForecastReader, Location } from '../ranking/index.js';
+import type { DailyWeather, ForecastReader, Location, StoredForecast } from '../ranking/index.js';
 import type { LocalDate } from '../shared/index.js';
 
 /** The columns a DailyWeather is read from. */
@@ -32,12 +32,31 @@ export class ForecastRepository implements ForecastReader {
     this.#db = db;
   }
 
-  async read(location: Location, dates: readonly LocalDate[]): Promise<DailyWeather[]> {
-    return this.#db
-      .select(DAY)
+  async read(location: Location, dates: readonly LocalDate[]): Promise<StoredForecast | undefined> {
+    const latestFetch = this.#db
+      .select({ fetchedAt: forecastFetches.fetchedAt })
+      .from(forecastFetches)
+      .where(
+        and(
+          eq(forecastFetches.locationId, location.id),
+          eq(forecastFetches.source, 'FORECAST'),
+          eq(forecastFetches.status, 'SUCCEEDED'),
+        ),
+      )
+      .orderBy(desc(forecastFetches.fetchedAt))
+      .limit(1)
+      .as('latest_fetch');
+    // One statement, so that the days and the fetch time are read from the same state.
+    const rows = await this.#db
+      .select({ day: DAY, fetchedAt: latestFetch.fetchedAt })
       .from(dailyWeather)
+      .innerJoin(latestFetch, sql`true`)
       .where(and(eq(dailyWeather.locationId, location.id), inArray(dailyWeather.date, [...dates])))
       .orderBy(asc(dailyWeather.date));
+    const [first] = rows;
+    return first === undefined
+      ? undefined
+      : { days: rows.map(({ day }) => day), fetchedAt: first.fetchedAt };
   }
 
   /**
