@@ -100,6 +100,9 @@ received it. There are no retries yet.
 | `forecast_fetches` | `id` | location, source (`FORECAST`/`MARINE`), `fetched_at`, status, error, `raw_payload` jsonb |
 
 - Daily rows are **upserted** per fetch ([ADR 0005](../decisions/0005-daily-granularity-upsert.md)).
+- The daily tables and the calls above list what the activities may read. Forecast and Marine are
+  asked for, and the daily tables hold, only the values a scorer reads; a value comes in with the
+  scorer that needs it. The recorded fixtures keep every variable listed.
 - `forecastFetchedAt` is the `fetched_at` of the latest successful `FORECAST` fetch, the source
   three of the four activities are scored from.
 - Scores are **not stored**: they are computed on read
