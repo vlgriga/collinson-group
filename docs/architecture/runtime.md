@@ -13,4 +13,5 @@
 - Either process can run as several instances; the queue gives each job to one of them.
 - A job is idempotent: running it twice leaves the same state as running it once.
 - Locally, `docker compose` runs all three, plus a one-shot service that applies the migrations
-  before the processes start.
+  before the processes start. Until [Refresh](../design/refresh.md) is built there is no `worker`,
+  and compose runs `api` and Postgres.

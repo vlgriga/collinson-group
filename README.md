@@ -11,7 +11,7 @@ and not yet built ([what is built](#what-is-built-and-what-is-designed)).
 
 ## Run it
 
-Docker is all it needs:
+It needs Docker, with ports 4000 and 5432 free:
 
 ```bash
 docker compose up --build
@@ -37,14 +37,16 @@ query {
 }
 ```
 
-`countryCode` and `days` are optional. Failures carry a code in `extensions.code`:
-`BAD_USER_INPUT`, `LOCATION_NOT_FOUND`, or `UPSTREAM_UNAVAILABLE` when Open-Meteo fails and nothing
-usable is stored.
+`countryCode` and `days` are optional. The service's own failures carry a code in
+`extensions.code`: `BAD_USER_INPUT`, `LOCATION_NOT_FOUND`, or `UPSTREAM_UNAVAILABLE` when the
+stored week has run out and Open-Meteo fails. A query the schema refuses gets GraphQL's own
+validation error, and an unexpected failure `INTERNAL_SERVER_ERROR`.
 
 To work on it, run the checks and the tests (they start their own Postgres in containers, so
 Docker must be running): [getting started](docs/getting-started.md).
 
 ```bash
+cp .env.example .env
 make install && make migrate && make dev-api   # the API in watch mode
 make gate                                      # lint, format, typecheck, every test, build
 ```
@@ -70,7 +72,7 @@ summed, then hard caps apply to conditions that are dangerous or make the activi
 
 | Activity | What decides a day | Capped when |
 |---|---|---|
-| Skiing | snow depth, fresh snow, temperature, wind, sunshine | no snow on the ground; gusts that stop lifts |
+| Skiing | snow depth, fresh snow, temperature, gusts, sunshine | no snow on the ground; gusts that stop lifts |
 | Surfing | wave height, swell period, wind, air temperature | waves over 4 m; thunderstorm |
 | Outdoor sightseeing | precipitation, feels-like temperature, share of daylight in sun, wind, UV | thunderstorm; heavy rain or snow |
 | Indoor sightseeing | the day outside, inverted: 50 on a perfect outdoor day, 100 on the worst | — |
@@ -103,8 +105,8 @@ answers allow re-extraction if a column is added.
 
 **Refresh, as built: read-through by the day.** A request is answered from Postgres while the stored
 days cover today and the next six; when they don't, that week is fetched inline, upserted and
-answered. Open-Meteo is called once on a place's first request, and after that about once a day per
-place that is still asked about, at its local midnight. A repeated request does not reach
+answered. Forecast and Marine are fetched on a place's first request, after its name is geocoded,
+and after that about once a day per place that is still asked about, at its local midnight. A repeated request does not reach
 Open-Meteo: locally, around 10 ms against about a second for a cold one. The cost is that a stored
 forecast can be up to a day old.
 
