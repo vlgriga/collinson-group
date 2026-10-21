@@ -430,6 +430,22 @@ describe('activityRanking', () => {
     // the first fetch, 3.1 mm on the first date of the second.
     expect(overlapping?.precipitationMm).toBe(3.1);
   });
+
+  it("starts the week on the place's own date: at 23:30 UTC, two hours ahead, the next one", async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    // 01:30 on 19 October in Chamonix: the week stored from the 18th is a day short there.
+    clock.advanceTo('2026-10-18T23:30:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    const [outdoor] = response.data?.activityRanking.activities ?? [];
+    expect(outdoor?.days.map(({ date }) => date)).toEqual([...WEEK.slice(1), '2026-10-25']);
+  });
 });
 
 const WEEK = [
