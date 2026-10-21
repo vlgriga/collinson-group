@@ -7,16 +7,24 @@ export type Hourly = {
   values: readonly (number | null)[];
 };
 
+/** The date of the place's calendar an hour's local time falls on. */
+export function dateOf(time: string): string {
+  return time.slice(0, 'YYYY-MM-DD'.length);
+}
+
 /** Each date's highest hourly value; null for a date none of whose hours has one. */
 export function dailyMaxima(
   dates: readonly LocalDate[],
   { time, values }: Hourly,
 ): (number | null)[] {
-  return dates.map((date) => {
-    const day = values.filter(
-      (value, hour): value is number =>
-        value !== null && time[hour]?.startsWith(`${date}T`) === true,
-    );
-    return day.length === 0 ? null : Math.max(...day);
+  const maxima = new Map<string, number>();
+  values.forEach((value, hour) => {
+    const at = time[hour];
+    if (value === null || at === undefined) {
+      return;
+    }
+    const date = dateOf(at);
+    maxima.set(date, Math.max(maxima.get(date) ?? value, value));
   });
+  return dates.map((date) => maxima.get(date) ?? null);
 }

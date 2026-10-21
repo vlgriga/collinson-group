@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import type { DailyWeather, Location } from '../ranking/index.js';
 import { getJson, sameDates, type LocalDate } from '../shared/index.js';
-import { dailyMaxima } from './daily-maxima.js';
+import { dailyMaxima, dateOf } from './daily-maxima.js';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 
@@ -110,7 +110,7 @@ function aligned({
 
 /** The dates the hours fall on, each once, in order. */
 function datesOf(times: readonly string[]): string[] {
-  return [...new Set(times.map((time) => time.slice(0, 'YYYY-MM-DD'.length)))];
+  return [...new Set(times.map(dateOf))];
 }
 
 function hours(seconds: number | null | undefined): number | null {
