@@ -5,7 +5,7 @@ export type LocalDate = string & { readonly brand: 'LocalDate' };
 export const WEEK_DAYS = 7;
 
 /** Whether `dates` are `expected`, one each and in the same order. */
-export function sameDates(dates: readonly LocalDate[], expected: readonly LocalDate[]): boolean {
+export function sameDates(dates: readonly string[], expected: readonly string[]): boolean {
   return dates.length === expected.length && dates.every((date, day) => date === expected[day]);
 }
 

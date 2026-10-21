@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { localWeek } from '../../src/shared/index.js';
+import { localWeek, sameDates } from '../../src/shared/index.js';
 
 describe('localWeek', () => {
   it('starts on the next date at 23:30 UTC in a place two hours ahead', () => {
@@ -58,5 +58,31 @@ describe('localWeek', () => {
       '2026-11-02',
       '2026-11-03',
     ]);
+  });
+});
+
+describe('sameDates', () => {
+  it('holds for the dates expected, in their order', () => {
+    // Given
+    const dates = ['2026-10-18', '2026-10-19'];
+
+    // When
+    const same = sameDates(dates, ['2026-10-18', '2026-10-19']);
+
+    // Then
+    expect(same).toBe(true);
+  });
+
+  it.each([
+    { other: 'the same dates in another order', dates: ['2026-10-19', '2026-10-18'] },
+    { other: 'one date fewer', dates: ['2026-10-18'] },
+    { other: 'one date more', dates: ['2026-10-18', '2026-10-19', '2026-10-20'] },
+    { other: 'a date a day later', dates: ['2026-10-18', '2026-10-20'] },
+  ] as const)('does not hold for $other', ({ dates }) => {
+    // When
+    const same = sameDates(dates, ['2026-10-18', '2026-10-19']);
+
+    // Then
+    expect(same).toBe(false);
   });
 });
