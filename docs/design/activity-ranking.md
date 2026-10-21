@@ -59,7 +59,7 @@ sequenceDiagram
    `daily_weather` row and, unless `has_marine` is false, a `daily_marine` row. The week is checked
    whatever `days` asks for, so the data used is never more than a day old. If it is not covered,
    the forecast for exactly that week is fetched inline (Forecast and Marine in parallel), upserted,
-   and read again; a response that
+   and answered as it was stored; a response that
    does not hold exactly those dates is invalid. How this rule meets the freshness window is
    settled in [Refresh](refresh.md).
 4. **Score** the requested days for every activity, aggregate, order, and answer.

@@ -165,8 +165,9 @@ the code.
 
 Atomicity, races and retries need a step that fails or waits at a chosen point.
 
-- **At Open-Meteo**, the fake does it: it can answer with a status, fail the connection, or hold a
-  response until the test releases it. The concurrency scenario holds the first forecast request,
+- **At Open-Meteo**, the fake does it: it can answer with a status, fail the connection, answer a
+  forecast without the first date asked for, or hold a response until the test releases it. The
+  concurrency scenario holds the first forecast request,
   sends the second GraphQL request, then releases.
 - **Inside our code**, and only there, a test may pass its own port implementation or a subclass of
   one of our adapters to `createTestApp`. It fails or waits at one named step, and its name says
