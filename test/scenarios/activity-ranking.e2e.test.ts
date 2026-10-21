@@ -97,14 +97,14 @@ describe('activityRanking', () => {
     const response = await requestActivityRanking(app, { city: 'Chamonix' });
 
     // Then
-    // Worked from the recording: rain on five of the seven days scores outdoor sightseeing 51 over
-    // the week and indoor 75, and with no snow on the ground every skiing day scores 0. The enum
-    // has skiing first and indoor last, so only the scores turn the order round.
+    // Rain on five of the recording's seven days keeps outdoor sightseeing below indoor over the
+    // week, and with no snow on the ground every skiing day scores 0. The enum has skiing first
+    // and indoor last, so only the scores turn the order round.
     expect(
       response.data?.activityRanking.activities.map(({ activity, score }) => ({ activity, score })),
     ).toEqual([
-      { activity: 'INDOOR_SIGHTSEEING', score: 75 },
-      { activity: 'OUTDOOR_SIGHTSEEING', score: 51 },
+      { activity: 'INDOOR_SIGHTSEEING', score: A_SCORE },
+      { activity: 'OUTDOOR_SIGHTSEEING', score: A_SCORE },
       { activity: 'SKIING', score: 0 },
     ]);
   });

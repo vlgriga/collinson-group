@@ -15,17 +15,11 @@ export const IDEAL_OUTDOOR_DAY = {
   weatherCode: 1,
 } as const;
 
-/** A mild, dry, half-sunny and calm day, to be overridden by what a test is about. */
+/** The ideal outdoor day, without snow, to be overridden by what a test is about. */
 export function buildDay(overrides: Partial<DailyWeather> = {}): DailyWeather {
   return {
     date: '2026-10-18' as LocalDate,
-    precipitationMm: 0,
-    apparentTemperatureMaxC: 20,
-    sunshineDurationH: 5,
-    daylightDurationH: 10,
-    windSpeedMaxKmh: 10,
-    uvIndexMax: 3,
-    weatherCode: 1,
+    ...IDEAL_OUTDOOR_DAY,
     snowDepthMaxCm: 0,
     snowfallCm: 0,
     temperatureMaxC: 21,

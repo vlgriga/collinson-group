@@ -111,7 +111,10 @@ type IndoorSightseeingRules = {
    * indoor sightseeing scores.
    */
   readonly baseScore: number;
-  /** The share of each point the day falls short of 100 outside that indoor sightseeing gains. */
+  /**
+   * The share, 0–1, of each point the day falls short of 100 outside that indoor sightseeing
+   * gains. baseScore + 100 × the share is the most indoor sightseeing scores, so at most 100.
+   */
   readonly outdoorShortfallShare: number;
 };
 

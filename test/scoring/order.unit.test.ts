@@ -17,17 +17,23 @@ describe('orderActivities', () => {
     expect(ordered.map(({ activity }) => activity)).toEqual(['OUTDOOR_SIGHTSEEING', 'SKIING']);
   });
 
-  it('keeps the order of the Activity enum on a tie, whatever order they come in', () => {
-    // Given
-    const activities = [
-      { activity: 'OUTDOOR_SIGHTSEEING', score: 50 },
-      { activity: 'SKIING', score: 50 },
-    ] as const;
+  it.each([
+    { first: 'SKIING', second: 'OUTDOOR_SIGHTSEEING' },
+    { first: 'OUTDOOR_SIGHTSEEING', second: 'INDOOR_SIGHTSEEING' },
+  ] as const)(
+    'keeps the order of the Activity enum on a tie, $first before $second, whatever order they come in',
+    ({ first, second }) => {
+      // Given
+      const activities = [
+        { activity: second, score: 50 },
+        { activity: first, score: 50 },
+      ];
 
-    // When
-    const ordered = orderActivities(activities);
+      // When
+      const ordered = orderActivities(activities);
 
-    // Then
-    expect(ordered.map(({ activity }) => activity)).toEqual(['SKIING', 'OUTDOOR_SIGHTSEEING']);
-  });
+      // Then
+      expect(ordered.map(({ activity }) => activity)).toEqual([first, second]);
+    },
+  );
 });

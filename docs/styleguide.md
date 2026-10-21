@@ -22,7 +22,7 @@ Formatting is enforced by Prettier and ESLint (`typescript-eslint` strict + type
 - Modules import each other only through their `index.ts`; no deep imports into another module's files.
 - Concrete classes are constructed and wired only in the composition roots (`api.ts`, `worker.ts` and the `app.ts` they share, [ADR 0010](decisions/0010-one-composition-function.md)).
 - Resolvers are thin: validate/map input, call a service, map output. No business logic or DB access.
-- `scoring/` is pure: no I/O, no `Date.now()`, no logging. Inputs in, `{ score, reasons }` out.
+- `scoring/` is pure: no I/O, no `Date.now()`, no logging. Inputs in, `{ score, reasons, rated }` out.
 - External data is validated with **zod** at the boundary (HTTP responses, env, GraphQL input); internal code trusts its types.
 - Dependencies are passed explicitly (constructor or function params) — no hidden singletons — so the composition roots, and the test app built like them, decide what is wired. Tests substitute only third-party dependencies (Open-Meteo, the clock); see [testing](testing.md#isolating-dependencies).
 
