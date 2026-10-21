@@ -7,14 +7,9 @@ import { join } from 'node:path';
 
 import { z } from 'zod';
 
-const FIXTURES = join(import.meta.dirname, '../test/fixtures/open-meteo');
+import { SEARCHES } from '../test/fixtures/open-meteo/searches.js';
 
-/** The places the fake knows, and the name their files are kept under. */
-const PLACES = [
-  { name: 'Chamonix', file: 'chamonix' },
-  // Some of its lower-ranked matches have no country.
-  { name: 'Victoria', file: 'victoria' },
-] as const;
+const FIXTURES = join(import.meta.dirname, '../test/fixtures/open-meteo');
 
 const only = process.argv.slice(2);
 
@@ -42,12 +37,16 @@ const TOP_MATCH = z.object({
     .rest(z.unknown()),
 });
 
-for (const place of PLACES.filter(({ file }) => only.length === 0 || only.includes(file))) {
+for (const place of SEARCHES.filter(({ file }) => only.length === 0 || only.includes(file))) {
   const geocoding = await getJson('https://geocoding-api.open-meteo.com/v1/search', {
     name: place.name,
     count: '10',
+    ...(place.countryCode === undefined ? {} : { countryCode: place.countryCode }),
   });
   await save(`geocoding-${place.file}.json`, geocoding);
+  if (place.forecast === false) {
+    continue;
+  }
 
   const [top] = TOP_MATCH.parse(geocoding).results;
   const forecast = await getJson('https://api.open-meteo.com/v1/forecast', {

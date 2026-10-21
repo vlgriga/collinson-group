@@ -20,8 +20,11 @@ const PLACE = z.object({
   timezone: z.string(),
 });
 
-// Only the match taken is checked: a lower-ranked one may lack a country, and is no reason to fail.
-const RESPONSE = z.object({ results: z.tuple([PLACE]).rest(z.unknown()) });
+const RESPONSE = z.object({
+  // Absent when nothing matches. Only the match taken is checked: a lower-ranked one may lack a
+  // country, and is no reason to fail.
+  results: z.tuple([PLACE]).rest(z.unknown()).optional(),
+});
 
 /** A place as the geocoder knows it, before it is stored. */
 export type GeocodedPlace = Omit<Location, 'id'> & {
@@ -31,10 +34,21 @@ export type GeocodedPlace = Omit<Location, 'id'> & {
 
 /** Open-Meteo Geocoding: a name to the place it most likely means. */
 export class GeocodingClient {
-  async search(name: string): Promise<GeocodedPlace> {
+  /**
+   * The place `name` most likely means, in the country of `countryCode` when one is given;
+   * undefined when the geocoder knows none.
+   */
+  async search(name: string, countryCode: string | null): Promise<GeocodedPlace | undefined> {
     const url = new URL(SEARCH_URL);
-    url.search = new URLSearchParams({ name, count: CANDIDATES }).toString();
-    const [top] = RESPONSE.parse(await getJson(url)).results;
+    url.search = new URLSearchParams({
+      name,
+      count: CANDIDATES,
+      ...(countryCode === null ? {} : { countryCode }),
+    }).toString();
+    const top = (await getJson(url, RESPONSE)).data.results?.[0];
+    if (top === undefined) {
+      return undefined;
+    }
     return {
       geocodingId: top.id,
       name: top.name,

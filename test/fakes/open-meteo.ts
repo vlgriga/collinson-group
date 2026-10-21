@@ -4,13 +4,23 @@ import { http, HttpResponse, type JsonBodyType } from 'msw';
 import { setupServer } from 'msw/node';
 import { z } from 'zod';
 
+import { SEARCHES } from '../fixtures/open-meteo/searches.js';
+
 const FIXTURES = new URL('../fixtures/open-meteo/', import.meta.url);
 
-/** The places the fake knows: the name a request gives, and the files it is answered from. */
-const PLACES = [
-  { name: 'chamonix', file: 'chamonix' },
-  { name: 'victoria', file: 'victoria' },
-] as const;
+const ENDPOINTS = {
+  geocoding: 'https://geocoding-api.open-meteo.com/v1/search',
+  forecast: 'https://api.open-meteo.com/v1/forecast',
+} as const;
+
+export type OpenMeteoApi = keyof typeof ENDPOINTS;
+
+/** How an API the test tells to fail answers (docs/testing.md#fault-injection). */
+export type OpenMeteoFailure =
+  | { status: number }
+  | 'broken connection'
+  /** A 200 whose body is whatever the test gives, such as one the client must refuse. */
+  | { body: JsonBodyType };
 
 const GEOCODING = z.looseObject({
   results: z
@@ -19,11 +29,18 @@ const GEOCODING = z.looseObject({
 });
 const FORECAST = z.looseObject({ daily: z.record(z.string(), z.array(z.unknown())) });
 
-type Place = {
+type Search = {
+  /** Lower-cased: Open-Meteo matches a name without regard to case. */
   name: string;
+  countryCode: string | undefined;
+  file: string;
+  forecast: boolean;
+  geocoding: z.infer<typeof GEOCODING>;
+};
+
+type Forecast = {
   latitude: number;
   longitude: number;
-  geocoding: z.infer<typeof GEOCODING>;
   forecast: z.infer<typeof FORECAST>;
 };
 
@@ -35,19 +52,30 @@ export class OpenMeteoFake {
   /** Every request received, in order. */
   readonly requests: URL[] = [];
 
-  readonly #places: Place[] = PLACES.map(({ name, file }) => {
-    const geocoding = GEOCODING.parse(readFixture(`geocoding-${file}.json`));
-    const [top] = geocoding.results;
-    const forecast = FORECAST.parse(readFixture(`forecast-${file}.json`));
-    return { name, latitude: top.latitude, longitude: top.longitude, geocoding, forecast };
-  });
+  readonly #failures = new Map<OpenMeteoApi, OpenMeteoFailure>();
+
+  readonly #searches: Search[] = SEARCHES.map(({ name, countryCode, file, forecast }) => ({
+    name: name.toLowerCase(),
+    countryCode,
+    file,
+    forecast: forecast !== false,
+    geocoding: GEOCODING.parse(readFixture(`geocoding-${file}.json`)),
+  }));
+
+  readonly #forecasts: Forecast[] = this.#searches
+    .filter(({ forecast }) => forecast)
+    .map(({ file, geocoding }) => {
+      const [top] = geocoding.results;
+      const forecast = FORECAST.parse(readFixture(`forecast-${file}.json`));
+      return { latitude: top.latitude, longitude: top.longitude, forecast };
+    });
 
   readonly #server = setupServer(
-    http.get('https://geocoding-api.open-meteo.com/v1/search', ({ request }) =>
-      HttpResponse.json(this.#geocode(this.#receive(request))),
+    http.get(ENDPOINTS.geocoding, ({ request }) =>
+      this.#answer('geocoding', request, (url) => this.#geocode(url)),
     ),
-    http.get('https://api.open-meteo.com/v1/forecast', ({ request }) =>
-      HttpResponse.json(this.#forecast(this.#receive(request))),
+    http.get(ENDPOINTS.forecast, ({ request }) =>
+      this.#answer('forecast', request, (url) => this.#forecast(url)),
     ),
   );
 
@@ -59,22 +87,52 @@ export class OpenMeteoFake {
     this.#server.close();
   }
 
-  #receive(request: Request): URL {
-    const url = new URL(request.url);
-    this.requests.push(url);
-    return url;
+  /** From now until the test ends, every request to `api` fails the way `failure` says. */
+  fail(api: OpenMeteoApi, failure: OpenMeteoFailure): void {
+    this.#failures.set(api, failure);
   }
 
-  /** The recorded answer for a known name; for any other, no results, as Open-Meteo answers. */
+  /** The requests one API received, in order. */
+  requestsTo(api: OpenMeteoApi): URL[] {
+    return this.requests.filter((url) => `${url.origin}${url.pathname}` === ENDPOINTS[api]);
+  }
+
+  #answer(api: OpenMeteoApi, request: Request, answer: (url: URL) => JsonBodyType): Response {
+    const url = new URL(request.url);
+    this.requests.push(url);
+    const failure = this.#failures.get(api);
+    if (failure === undefined) {
+      return HttpResponse.json(answer(url));
+    }
+    if (failure === 'broken connection') {
+      return HttpResponse.error();
+    }
+    if ('status' in failure) {
+      // The shape Open-Meteo gives its own errors.
+      return HttpResponse.json(
+        { error: true, reason: 'The test asked for a failure' },
+        { status: failure.status },
+      );
+    }
+    return HttpResponse.json(failure.body);
+  }
+
+  /**
+   * The recorded answer for a known search; for any other, no results, as Open-Meteo answers.
+   * The name is matched without regard to case, as Open-Meteo does; the country code exactly.
+   */
   #geocode(url: URL): JsonBodyType {
     const name = url.searchParams.get('name')?.toLowerCase();
-    const place = this.#places.find((known) => known.name === name);
-    return place?.geocoding ?? { generationtime_ms: 0.1 };
+    const countryCode = url.searchParams.get('countryCode') ?? undefined;
+    const search = this.#searches.find(
+      (known) => known.name === name && known.countryCode === countryCode,
+    );
+    return search?.geocoding ?? { generationtime_ms: 0.1 };
   }
 
   /** The recorded days, dated from `start_date` to `end_date` as asked (ADR 0009). */
   #forecast(url: URL): JsonBodyType {
-    const place = this.#places.find(
+    const place = this.#forecasts.find(
       ({ latitude, longitude }) =>
         latitude === Number(url.searchParams.get('latitude')) &&
         longitude === Number(url.searchParams.get('longitude')),

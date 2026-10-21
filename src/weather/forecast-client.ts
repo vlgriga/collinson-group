@@ -55,8 +55,10 @@ export class ForecastClient {
       start_date: first,
       end_date: last,
     }).toString();
-    const payload = await getJson(url);
-    const { daily } = RESPONSE.parse(payload);
+    const {
+      payload,
+      data: { daily },
+    } = await getJson(url, RESPONSE);
     const days = daily.time.map((date, day) => ({
       date,
       precipitationMm: daily.precipitation_sum[day] ?? null,
