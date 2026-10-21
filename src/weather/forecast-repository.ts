@@ -1,8 +1,21 @@
-import { sql, type SQL } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
 import { dailyWeather, forecastFetches, type Database } from '../db/index.js';
-import type { DailyWeather } from '../ranking/index.js';
+import type { DailyWeather, ForecastReader, Location } from '../ranking/index.js';
+import type { LocalDate } from '../shared/index.js';
+
+/** The columns a DailyWeather is read from. */
+const DAY = {
+  date: dailyWeather.date,
+  precipitationMm: dailyWeather.precipitationMm,
+  apparentTemperatureMaxC: dailyWeather.apparentTemperatureMaxC,
+  sunshineDurationH: dailyWeather.sunshineDurationH,
+  daylightDurationH: dailyWeather.daylightDurationH,
+  windSpeedMaxKmh: dailyWeather.windSpeedMaxKmh,
+  uvIndexMax: dailyWeather.uvIndexMax,
+  weatherCode: dailyWeather.weatherCode,
+};
 
 export type ForecastFetch = {
   locationId: string;
@@ -12,11 +25,19 @@ export type ForecastFetch = {
 };
 
 /** The stored days of each place, and the fetches they came from. */
-export class ForecastRepository {
+export class ForecastRepository implements ForecastReader {
   readonly #db: Database;
 
   constructor({ db }: { db: Database }) {
     this.#db = db;
+  }
+
+  async read(location: Location, dates: readonly LocalDate[]): Promise<DailyWeather[]> {
+    return this.#db
+      .select(DAY)
+      .from(dailyWeather)
+      .where(and(eq(dailyWeather.locationId, location.id), inArray(dailyWeather.date, [...dates])))
+      .orderBy(asc(dailyWeather.date));
   }
 
   /**

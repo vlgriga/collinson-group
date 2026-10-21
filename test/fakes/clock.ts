@@ -1,7 +1,17 @@
 import type { Clock } from '../../src/ranking/index.js';
 
-/** A clock that stays at the instant it is given. */
-export function fixedClock(instant: string): Clock {
-  const now = new Date(instant);
-  return { now: () => new Date(now) };
+export type FixedClock = Clock & {
+  /** Moves the clock to `instant`, where it stays until moved again. */
+  advanceTo(instant: string): void;
+};
+
+/** A clock that stays at the instant it is given, until the test moves it on. */
+export function fixedClock(instant: string): FixedClock {
+  let now = new Date(instant);
+  return {
+    now: () => new Date(now),
+    advanceTo: (later) => {
+      now = new Date(later);
+    },
+  };
 }

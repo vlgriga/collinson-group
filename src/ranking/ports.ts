@@ -29,6 +29,12 @@ export interface LocationResolver {
   resolve(request: { city: string; countryCode: string | null }): Promise<Location>;
 }
 
+/** Reads the days of a place's forecast that are stored. */
+export interface ForecastReader {
+  /** The stored days among `dates`, in date order. */
+  read(location: Location, dates: readonly LocalDate[]): Promise<DailyWeather[]>;
+}
+
 /** Fetches a place's forecast now. */
 export interface ForecastFetcher {
   /** The days of `dates`, in date order. */

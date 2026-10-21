@@ -297,6 +297,25 @@ describe('activityRanking', () => {
     expect(await readLocations(app.db)).toHaveLength(1);
     expect((await readDailyWeather(app.db)).map(({ date }) => date)).toEqual(WEEK);
   });
+
+  it('answers a second request the same day from the stored forecast, asking Open-Meteo nothing', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-18T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.data?.activityRanking.activities).toHaveLength(1);
+    // The first request's geocoding and forecast, and nothing since.
+    expect(app.openMeteo.requests.map(({ pathname }) => pathname)).toEqual([
+      '/v1/search',
+      '/v1/forecast',
+    ]);
+  });
 });
 
 const WEEK = [

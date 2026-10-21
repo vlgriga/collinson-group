@@ -13,6 +13,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
+import type { LocalDate } from '../shared/index.js';
+
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -60,7 +62,7 @@ export const dailyWeather = pgTable(
     locationId: uuid('location_id')
       .notNull()
       .references(() => locations.id, { onDelete: 'cascade' }),
-    date: date('date', { mode: 'string' }).notNull(),
+    date: date('date', { mode: 'string' }).$type<LocalDate>().notNull(),
     precipitationMm: doublePrecision('precipitation_mm'),
     apparentTemperatureMaxC: doublePrecision('apparent_temperature_max_c'),
     sunshineDurationH: doublePrecision('sunshine_duration_h'),

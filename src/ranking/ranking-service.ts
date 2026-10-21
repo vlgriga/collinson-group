@@ -7,7 +7,13 @@ import {
   type Rating,
 } from '../scoring/index.js';
 import { localWeek, type LocalDate } from '../shared/index.js';
-import type { Clock, ForecastFetcher, Location, LocationResolver } from './ports.js';
+import type {
+  Clock,
+  ForecastFetcher,
+  ForecastReader,
+  Location,
+  LocationResolver,
+} from './ports.js';
 
 export type RankingRequest = {
   city: string;
@@ -41,15 +47,18 @@ export type Ranking = {
 /** Answers a ranking request: the place a city resolves to, and its coming days per activity. */
 export class RankingService {
   readonly #locations: LocationResolver;
+  readonly #storedForecasts: ForecastReader;
   readonly #forecasts: ForecastFetcher;
   readonly #clock: Clock;
 
   constructor(dependencies: {
     locations: LocationResolver;
+    storedForecasts: ForecastReader;
     forecasts: ForecastFetcher;
     clock: Clock;
   }) {
     this.#locations = dependencies.locations;
+    this.#storedForecasts = dependencies.storedForecasts;
     this.#forecasts = dependencies.forecasts;
     this.#clock = dependencies.clock;
   }
@@ -57,12 +66,21 @@ export class RankingService {
   async rank(request: RankingRequest): Promise<Ranking> {
     const location = await this.#locations.resolve(request);
     const week = localWeek(this.#clock.now(), location.timezone);
-    // The whole week is fetched whatever is asked for (docs/design/activity-ranking.md).
-    const days = (await this.#forecasts.fetch(location, week)).slice(0, request.days);
+    const days = (await this.#forecastFor(location, week)).slice(0, request.days);
     return {
       location,
       activities: [forecastActivity('OUTDOOR_SIGHTSEEING', days, scoreOutdoorSightseeing)],
     };
+  }
+
+  /**
+   * The stored forecast while it covers the week, whatever is asked for, so that the days scored
+   * are never more than a day old; fetched now otherwise (docs/design/activity-ranking.md).
+   */
+  async #forecastFor(location: Location, week: readonly LocalDate[]): Promise<DailyWeather[]> {
+    const stored = await this.#storedForecasts.read(location, week);
+    // One day per date of the week at most, so as many as the week is all of it.
+    return stored.length === week.length ? stored : this.#forecasts.fetch(location, week);
   }
 }
 
