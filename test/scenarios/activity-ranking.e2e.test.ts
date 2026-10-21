@@ -403,6 +403,24 @@ describe('activityRanking', () => {
     ]);
   });
 
+  it('scores skiing from the snow stored for a resort, nothing where it is thin, 10 in a gale', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Val Thorens' });
+    clock.advanceTo('2026-10-18T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Val Thorens' });
+
+    // Then
+    // Worked from the recording: under 10 cm on all but the 4th and 5th days; the 4th has 12 cm,
+    // 6.3 cm fresh, a high of -3 °C, gusts of 45 km/h and sun for 31% of daylight; the 5th has
+    // gusts of 63.4 km/h.
+    const skiing = forecastOf(response, 'SKIING');
+    expect(skiing?.days.map(({ score }) => score)).toEqual([0, 0, 0, 42, 10, 0, 0]);
+  });
+
   it.each([{ days: 7 }, { days: 1 }] as const)(
     'fetches the week from the new today once the stored one is a day short, asked for days: $days',
     async ({ days }) => {
