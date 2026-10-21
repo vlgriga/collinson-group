@@ -12,8 +12,8 @@ export function fixedClock(instant: string): FixedClock {
     now: () => new Date(now),
     advanceTo: (later) => {
       const next = new Date(later);
-      if (next < now) {
-        throw new Error(`The clock does not go back: ${later} is before ${now.toISOString()}`);
+      if (Number.isNaN(next.getTime()) || next < now) {
+        throw new Error(`The clock moves on only: ${later} is not after ${now.toISOString()}`);
       }
       now = next;
     },

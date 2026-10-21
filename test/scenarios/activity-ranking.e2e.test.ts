@@ -409,7 +409,8 @@ describe('activityRanking', () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
     await requestActivityRanking(app, { city: 'Chamonix' });
-    await storeDayMissing(app.db, '2026-10-21');
+    const [chamonix] = await readLocations(app.db);
+    await storeDayMissing(app.db, chamonix!, '2026-10-21');
 
     // When
     await requestActivityRanking(app, { city: 'Chamonix' });
