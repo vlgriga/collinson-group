@@ -110,6 +110,10 @@ type SkiingRules = {
     'snowDepth' | 'freshSnow' | 'temperature' | 'gusts' | 'sunshine',
     Factor
   >;
+  readonly caps: {
+    readonly noSnow: Cap & { readonly belowCm: number };
+    readonly gusts: Cap & { readonly overKmh: number };
+  };
 };
 
 export const SKIING = {
@@ -163,6 +167,18 @@ export const SKIING = {
         { at: 0, score: 0 },
         { at: 0.5, score: 1 },
       ],
+    },
+  },
+  caps: {
+    noSnow: {
+      // Under 10 cm grass and rocks show through: there is nothing to ski on, whatever the sky.
+      belowCm: 10,
+      maxScore: 0,
+    },
+    gusts: {
+      // Past 60 km/h chairlifts and gondolas stop for safety, and what runs is exposed.
+      overKmh: 60,
+      maxScore: 10,
     },
   },
 } as const satisfies SkiingRules;

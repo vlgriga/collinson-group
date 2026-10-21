@@ -78,6 +78,58 @@ describe('scoreSkiing', () => {
     expect(scored.score).toBe(score);
   });
 
+  it('caps the day at 0 below 10 cm of snow on the ground', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, snowDepthMaxCm: 9 });
+
+    // When
+    const { score } = scoreSkiing(day);
+
+    // Then
+    expect(score).toBe(0);
+  });
+
+  it('leads the reasons with no snow to ski on', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, snowDepthMaxCm: 5 });
+
+    // When
+    const { reasons } = scoreSkiing(day);
+
+    // Then
+    expect(reasons).toEqual([
+      'No snow to ski on',
+      '5 cm of snow on the ground',
+      '15 cm of fresh snow',
+    ]);
+  });
+
+  it('caps the day at 10 in gusts over 60 km/h', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, windGustsMaxKmh: 60.1 });
+
+    // When
+    const { score } = scoreSkiing(day);
+
+    // Then
+    expect(score).toBe(10);
+  });
+
+  it('leads the reasons with gusts strong enough to close lifts', () => {
+    // Given
+    const day = buildDay({ ...IDEAL, windGustsMaxKmh: 70 });
+
+    // When
+    const { reasons } = scoreSkiing(day);
+
+    // Then
+    expect(reasons).toEqual([
+      'Gusts strong enough to close lifts',
+      'Gusts up to 70 km/h',
+      '150 cm of snow on the ground',
+    ]);
+  });
+
   it('counts a day without daylight as one without sunshine', () => {
     // Given
     const day = buildDay({ ...IDEAL, sunshineDurationH: 0, daylightDurationH: 0 });
