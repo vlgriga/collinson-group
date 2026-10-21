@@ -48,6 +48,17 @@ const TOP_MATCH = z.object({
     .rest(z.unknown()),
 });
 
+// A name that is no place or recording would otherwise record nothing, and say nothing of it.
+const known = SEARCHES.flatMap(({ file, forecast }) => [
+  file,
+  `geocoding-${file}`,
+  ...(forecast === false ? [] : [`forecast-${file}`, `marine-${file}`]),
+]);
+const unknown = only.filter((name) => !known.includes(name));
+if (unknown.length > 0) {
+  throw new Error(`No place or recording is named ${unknown.join(', ')}`);
+}
+
 for (const place of SEARCHES) {
   const wanted = (recording: string): boolean =>
     only.length === 0 || only.includes(place.file) || only.includes(`${recording}-${place.file}`);
