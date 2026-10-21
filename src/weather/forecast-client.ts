@@ -63,7 +63,7 @@ export class ForecastClient {
     // for short (ADR 0009).
     if (daily.time.length !== dates.length || daily.time.some((date, day) => date !== dates[day])) {
       throw new UpstreamUnavailableError(
-        `${url.host}${url.pathname} answered for other dates than those asked for`,
+        `${url.host}${url.pathname} answered for ${daily.time.join(', ')} rather than ${dates.join(', ')}`,
       );
     }
     const days = daily.time.map((date, day) => ({

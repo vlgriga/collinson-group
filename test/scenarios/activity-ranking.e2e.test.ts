@@ -504,7 +504,21 @@ const UPSTREAM_FAILURES = [
     failing: 'a response that fails validation',
     failure: { body: { daily: { time: ['2026-10-18'] } } },
   },
-  { api: 'forecast', failing: 'a week without today', failure: 'without today' },
+  {
+    api: 'forecast',
+    failing: 'a week without today',
+    failure: { dates: { from: '2026-10-19', to: '2026-10-24' } },
+  },
+  {
+    api: 'forecast',
+    failing: 'a week a day later than asked',
+    failure: { dates: { from: '2026-10-19', to: '2026-10-25' } },
+  },
+  {
+    api: 'forecast',
+    failing: 'a week without its last day',
+    failure: { dates: { from: '2026-10-18', to: '2026-10-23' } },
+  },
 ] as const;
 
 const A_SCORE: unknown = expect.toSatisfy(
