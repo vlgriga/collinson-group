@@ -65,7 +65,7 @@ describe('activityRanking', () => {
     });
   });
 
-  it.each(['SKIING', 'OUTDOOR_SIGHTSEEING'] as const)(
+  it.each(['SKIING', 'OUTDOOR_SIGHTSEEING', 'INDOOR_SIGHTSEEING'] as const)(
     'scores %s for the 7 days from today, each with a rating and a reason',
     async (activity) => {
       // Given
@@ -89,7 +89,7 @@ describe('activityRanking', () => {
     },
   );
 
-  it('lists the activities best weekly score first: outdoor sightseeing before skiing without snow', async () => {
+  it('lists the activities best weekly score first: indoor sightseeing in a wet week, skiing without snow last', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
 
@@ -97,11 +97,13 @@ describe('activityRanking', () => {
     const response = await requestActivityRanking(app, { city: 'Chamonix' });
 
     // Then
-    // The recording has no snow on the ground, so every skiing day scores 0; SKIING comes first in
-    // the enum, so only a higher score puts outdoor sightseeing before it.
+    // Rain on five of the recording's seven days keeps outdoor sightseeing below indoor over the
+    // week, and with no snow on the ground every skiing day scores 0. The enum has skiing first
+    // and indoor last, so only the scores turn the order round.
     expect(
       response.data?.activityRanking.activities.map(({ activity, score }) => ({ activity, score })),
     ).toEqual([
+      { activity: 'INDOOR_SIGHTSEEING', score: A_SCORE },
       { activity: 'OUTDOOR_SIGHTSEEING', score: A_SCORE },
       { activity: 'SKIING', score: 0 },
     ]);

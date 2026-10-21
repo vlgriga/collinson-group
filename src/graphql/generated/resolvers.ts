@@ -17,6 +17,7 @@ export type Scalars = {
 
 /** What the days are scored for. */
 export type Activity =
+  | 'INDOOR_SIGHTSEEING'
   | 'OUTDOOR_SIGHTSEEING'
   | 'SKIING';
 

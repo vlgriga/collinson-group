@@ -3,7 +3,7 @@ import type { Factor } from '../config/index.js';
 import { onCurve } from './curve.js';
 import type { DailyWeather, DayScore } from './daily-weather.js';
 
-const MAX_SCORE = 100;
+export const MAX_SCORE = 100;
 
 /** Enough to explain a score without listing every factor. */
 const REASON_COUNT = 3;
@@ -25,6 +25,7 @@ export function unrated(values: Record<string, number | null>): DayScore {
     reasons: Object.entries(values)
       .filter(([, value]) => value === null)
       .map(([name]) => `${name} missing from the forecast`),
+    rated: false,
   };
 }
 
@@ -74,6 +75,7 @@ export function dayScore(factors: readonly (Scored | undefined)[], caps: readonl
   return {
     score: Math.round(Math.min(uncapped, ...caps.map(({ maxScore }) => maxScore))),
     reasons: [...caps, ...costliest(scored)].map(({ reason }) => reason).slice(0, REASON_COUNT),
+    rated: true,
   };
 }
 

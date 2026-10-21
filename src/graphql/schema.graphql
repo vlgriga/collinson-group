@@ -136,6 +136,7 @@ What the days are scored for.
 enum Activity {
   SKIING
   OUTDOOR_SIGHTSEEING
+  INDOOR_SIGHTSEEING
 }
 
 """

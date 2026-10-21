@@ -105,6 +105,29 @@ export const OUTDOOR_SIGHTSEEING = {
   },
 } as const satisfies OutdoorSightseeingRules;
 
+type IndoorSightseeingRules = {
+  /**
+   * The score on a perfect day outside, and on one outdoor sightseeing cannot rate: the least
+   * indoor sightseeing scores.
+   */
+  readonly baseScore: number;
+  /**
+   * The share, 0–1, of each point the day falls short of 100 outside that indoor sightseeing
+   * gains. baseScore + 100 × the share is the most indoor sightseeing scores, so at most 100.
+   */
+  readonly outdoorShortfallShare: number;
+};
+
+/** Indoor sightseeing scores higher the worse the day is for outdoor sightseeing. */
+export const INDOOR_SIGHTSEEING = {
+  // Museums and galleries are worth a visit on any day, but on a perfect one outside they are
+  // not its best use: FAIR, not GOOD.
+  baseScore: 50,
+  // Half, so that the worst day outside makes the most of indoor sights, and indoor outranks
+  // outdoor once outdoor falls below about 67, a GOOD day included.
+  outdoorShortfallShare: 0.5,
+} as const satisfies IndoorSightseeingRules;
+
 /**
  * The least snow on the ground there is anything to ski on, in cm: under it grass and rocks show
  * through. Where the no-snow cap stops and the snow depth curve starts, so that the two cannot

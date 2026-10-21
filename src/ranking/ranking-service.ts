@@ -2,6 +2,7 @@ import {
   ACTIVITIES,
   orderActivities,
   rate,
+  scoreIndoorSightseeing,
   scoreOutdoorSightseeing,
   scoreSkiing,
   summarizeWeek,
@@ -53,6 +54,7 @@ export type Ranking = {
 const SCORERS: Record<Activity, (day: DailyWeather) => DayScore> = {
   SKIING: scoreSkiing,
   OUTDOOR_SIGHTSEEING: scoreOutdoorSightseeing,
+  INDOOR_SIGHTSEEING: scoreIndoorSightseeing,
 };
 
 /** Answers a ranking request: the place a city resolves to, and its coming days per activity. */
