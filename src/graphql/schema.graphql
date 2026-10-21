@@ -3,6 +3,11 @@ A calendar day in the place's own timezone, written YYYY-MM-DD.
 """
 scalar Date
 
+"""
+An instant, written in ISO 8601 in UTC, such as 2026-10-18T09:00:00.000Z.
+"""
+scalar DateTime
+
 type Query {
   """
   How good each of the coming days is for each activity in a city or town.
@@ -31,6 +36,11 @@ type ActivityRanking {
   The place the city was taken to mean.
   """
   location: Location!
+  """
+  When the forecast the days are scored from was fetched from Open-Meteo: the latest successful
+  fetch for the place.
+  """
+  forecastFetchedAt: DateTime!
   """
   Each activity with its days and its weekly score.
   """

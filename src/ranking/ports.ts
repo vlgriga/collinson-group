@@ -29,8 +29,22 @@ export interface LocationResolver {
   resolve(request: { city: string; countryCode: string | null }): Promise<Location>;
 }
 
-/** Fetches a place's forecast now. */
+/** Days of a place's forecast as they are stored, and when the forecast was fetched. */
+export type StoredForecast = {
+  /** In date order. */
+  days: DailyWeather[];
+  /** The latest successful fetch of the place's forecast. */
+  fetchedAt: Date;
+};
+
+/** Reads the days of a place's forecast that are stored. */
+export interface ForecastReader {
+  /** The stored days among `dates`; undefined when none of them is. */
+  read(location: Location, dates: readonly LocalDate[]): Promise<StoredForecast | undefined>;
+}
+
+/** Fetches a place's forecast now, and stores it. */
 export interface ForecastFetcher {
-  /** The days of `dates`, in date order. */
-  fetch(location: Location, dates: readonly LocalDate[]): Promise<DailyWeather[]>;
+  /** The days of `dates`. */
+  fetch(location: Location, dates: readonly LocalDate[]): Promise<StoredForecast>;
 }

@@ -13,6 +13,7 @@ export const ACTIVITY_RANKING = /* GraphQL */ `
         elevation
         timezone
       }
+      forecastFetchedAt
       activities {
         activity
         score
@@ -42,6 +43,7 @@ export type ActivityRankingResponse = {
         elevation: number | null;
         timezone: string;
       };
+      forecastFetchedAt: string;
       activities: {
         activity: string;
         score: number | null;

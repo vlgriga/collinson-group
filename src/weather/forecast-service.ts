@@ -1,4 +1,4 @@
-import type { Clock, DailyWeather, ForecastFetcher, Location } from '../ranking/index.js';
+import type { Clock, ForecastFetcher, Location, StoredForecast } from '../ranking/index.js';
 import type { LocalDate } from '../shared/index.js';
 import type { ForecastClient } from './forecast-client.js';
 import type { ForecastRepository } from './forecast-repository.js';
@@ -19,14 +19,11 @@ export class ForecastService implements ForecastFetcher {
     this.#clock = dependencies.clock;
   }
 
-  async fetch(location: Location, dates: readonly LocalDate[]): Promise<DailyWeather[]> {
+  async fetch(location: Location, dates: readonly LocalDate[]): Promise<StoredForecast> {
     const { days, payload } = await this.#client.daily(location, dates);
-    await this.#repository.saveFetch({
-      locationId: location.id,
-      days,
-      payload,
-      fetchedAt: this.#clock.now(),
-    });
-    return days;
+    const fetchedAt = this.#clock.now();
+    await this.#repository.saveFetch({ locationId: location.id, days, payload, fetchedAt });
+    // What was just stored, rather than read back.
+    return { days, fetchedAt };
   }
 }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import type { DailyWeather, Location } from '../ranking/index.js';
-import { getJson, type LocalDate } from '../shared/index.js';
+import { getJson, sameDates, type LocalDate } from '../shared/index.js';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 
@@ -58,7 +58,15 @@ export class ForecastClient {
     const {
       payload,
       data: { daily },
-    } = await getJson(url, RESPONSE);
+    } = await getJson(
+      url,
+      // Other dates, such as a week without today just after midnight, would leave the week asked
+      // for short (ADR 0009).
+      RESPONSE.refine(
+        ({ daily: { time } }) => sameDates(time, dates),
+        `Expected the dates asked for: ${dates.join(', ')}`,
+      ),
+    );
     const days = daily.time.map((date, day) => ({
       date,
       precipitationMm: daily.precipitation_sum[day] ?? null,

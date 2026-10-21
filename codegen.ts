@@ -10,7 +10,7 @@ const config: CodegenConfig = {
         enumsAsTypes: true,
         // A scalar left unmapped would be typed `any`.
         strictScalars: true,
-        scalars: { Date: 'string' },
+        scalars: { Date: 'string', DateTime: 'string' },
       },
     },
   },

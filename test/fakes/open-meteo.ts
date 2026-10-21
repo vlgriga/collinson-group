@@ -20,7 +20,13 @@ export type OpenMeteoFailure =
   | { status: number }
   | 'broken connection'
   /** A 200 whose body is whatever the test gives, such as one the client must refuse. */
-  | { body: JsonBodyType };
+  | { body: JsonBodyType }
+  /**
+   * The recorded forecast for the dates from `from` to `to`, whatever was asked for: such as a
+   * week without today, as a provider with no forecast for the place's today yet answers
+   * (ADR 0009).
+   */
+  | { dates: { from: string; to: string } };
 
 const GEOCODING = z.looseObject({
   results: z
@@ -107,6 +113,9 @@ export class OpenMeteoFake {
     if (failure === 'broken connection') {
       return HttpResponse.error();
     }
+    if ('dates' in failure) {
+      return HttpResponse.json(answer(askingFor(url, failure.dates)));
+    }
     if ('status' in failure) {
       // The shape Open-Meteo gives its own errors.
       return HttpResponse.json(
@@ -166,6 +175,14 @@ function param(url: URL, name: string): string {
     throw new Error(`The fake answers only for an explicit ${name}`);
   }
   return value;
+}
+
+/** `url`, asking for the dates from `from` to `to` instead. */
+function askingFor(url: URL, { from, to }: { from: string; to: string }): URL {
+  const other = new URL(url);
+  other.searchParams.set('start_date', from);
+  other.searchParams.set('end_date', to);
+  return other;
 }
 
 function datesBetween(first: string, last: string): string[] {

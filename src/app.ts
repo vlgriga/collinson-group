@@ -29,11 +29,12 @@ export function createApp({ env, clock }: AppDependencies): App {
     geocoding: new GeocodingClient(),
     repository: new LocationRepository({ db }),
   });
+  const storedForecasts = new ForecastRepository({ db });
   const forecasts = new ForecastService({
     client: new ForecastClient(),
-    repository: new ForecastRepository({ db }),
+    repository: storedForecasts,
     clock,
   });
-  const ranking = new RankingService({ locations, forecasts, clock });
+  const ranking = new RankingService({ locations, storedForecasts, forecasts, clock });
   return { clock, db, yoga: createGraphqlServer(ranking), close };
 }

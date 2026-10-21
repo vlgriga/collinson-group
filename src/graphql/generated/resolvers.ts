@@ -11,6 +11,8 @@ export type Scalars = {
   Float: { input: number; output: number; }
   /** A calendar day in the place's own timezone, written YYYY-MM-DD. */
   Date: { input: string; output: string; }
+  /** An instant, written in ISO 8601 in UTC, such as 2026-10-18T09:00:00.000Z. */
+  DateTime: { input: string; output: string; }
 };
 
 /** What the days are scored for. */
@@ -35,6 +37,11 @@ export type ActivityRanking = {
   __typename?: 'ActivityRanking';
   /** Each activity with its days and its weekly score. */
   activities: Array<ActivityForecast>;
+  /**
+   * When the forecast the days are scored from was fetched from Open-Meteo: the latest successful
+   * fetch for the place.
+   */
+  forecastFetchedAt: Scalars['DateTime']['output'];
   /** The place the city was taken to mean. */
   location: Location;
 };
@@ -171,6 +178,7 @@ export type ResolversTypes = {
   ActivityRanking: ResolverTypeWrapper<ActivityRanking>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Date: ResolverTypeWrapper<Scalars['Date']['output']>;
+  DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   DayScore: ResolverTypeWrapper<DayScore>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -186,6 +194,7 @@ export type ResolversParentTypes = {
   ActivityRanking: ActivityRanking;
   Boolean: Scalars['Boolean']['output'];
   Date: Scalars['Date']['output'];
+  DateTime: Scalars['DateTime']['output'];
   DayScore: DayScore;
   Float: Scalars['Float']['output'];
   Int: Scalars['Int']['output'];
@@ -203,11 +212,16 @@ export type ActivityForecastResolvers<ContextType = any, ParentType extends Reso
 
 export type ActivityRankingResolvers<ContextType = any, ParentType extends ResolversParentTypes['ActivityRanking'] = ResolversParentTypes['ActivityRanking']> = {
   activities?: Resolver<Array<ResolversTypes['ActivityForecast']>, ParentType, ContextType>;
+  forecastFetchedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   location?: Resolver<ResolversTypes['Location'], ParentType, ContextType>;
 };
 
 export interface DateScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Date'], any> {
   name: 'Date';
+}
+
+export interface DateTimeScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['DateTime'], any> {
+  name: 'DateTime';
 }
 
 export type DayScoreResolvers<ContextType = any, ParentType extends ResolversParentTypes['DayScore'] = ResolversParentTypes['DayScore']> = {
@@ -236,6 +250,7 @@ export type Resolvers<ContextType = any> = {
   ActivityForecast?: ActivityForecastResolvers<ContextType>;
   ActivityRanking?: ActivityRankingResolvers<ContextType>;
   Date?: GraphQLScalarType;
+  DateTime?: GraphQLScalarType;
   DayScore?: DayScoreResolvers<ContextType>;
   Location?: LocationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;

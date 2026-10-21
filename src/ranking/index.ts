@@ -1,6 +1,13 @@
 // The port's terms, for the modules that implement them.
 export type { DailyWeather } from '../scoring/index.js';
-export type { Clock, ForecastFetcher, Location, LocationResolver } from './ports.js';
+export type {
+  Clock,
+  ForecastFetcher,
+  ForecastReader,
+  Location,
+  LocationResolver,
+  StoredForecast,
+} from './ports.js';
 export {
   RankingService,
   type Activity,

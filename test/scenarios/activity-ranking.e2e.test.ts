@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { createTestApp } from '../app.js';
 import { fixedClock } from '../fakes/clock.js';
 import { readLocationAliases, readLocations } from '../locations/factories/location.js';
-import { readDailyWeather, readForecastFetches } from '../weather/factories/forecast.js';
+import {
+  readDailyWeather,
+  readForecastFetches,
+  storeDayMissing,
+} from '../weather/factories/forecast.js';
 import { requestActivityRanking } from './support.js';
 
 describe('activityRanking', () => {
@@ -231,6 +235,23 @@ describe('activityRanking', () => {
     },
   );
 
+  it("asks for the forecast of the week as dates in the place's timezone", async () => {
+    // Given
+    // 22:00 on 17 October in Paris, Texas, five hours behind.
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T03:00:00Z') });
+
+    // When
+    await requestActivityRanking(app, { city: 'Paris', countryCode: 'US' });
+
+    // Then
+    const [forecast] = app.openMeteo.requestsTo('forecast');
+    expect({
+      timezone: forecast?.searchParams.get('timezone'),
+      startDate: forecast?.searchParams.get('start_date'),
+      endDate: forecast?.searchParams.get('end_date'),
+    }).toEqual({ timezone: 'America/Chicago', startDate: '2026-10-17', endDate: '2026-10-23' });
+  });
+
   it('stores the place, its 7 days of weather and a successful forecast fetch', async () => {
     // Given
     const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
@@ -297,6 +318,156 @@ describe('activityRanking', () => {
     expect(await readLocations(app.db)).toHaveLength(1);
     expect((await readDailyWeather(app.db)).map(({ date }) => date)).toEqual(WEEK);
   });
+
+  it('states when the forecast it answers from was fetched', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.data?.activityRanking.forecastFetchedAt).toBe('2026-10-18T09:00:00.000Z');
+  });
+
+  it('states the time of the stored forecast it answers from, not the time of the request', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-18T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.data?.activityRanking.forecastFetchedAt).toBe('2026-10-18T09:00:00.000Z');
+  });
+
+  it('states the time of the latest of the forecasts fetched for the place', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    // A day on, the stored week is a day short, and is fetched again.
+    clock.advanceTo('2026-10-19T09:00:00Z');
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-19T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.data?.activityRanking.forecastFetchedAt).toBe('2026-10-19T09:00:00.000Z');
+  });
+
+  it('answers a second request the same day from the stored forecast, asking Open-Meteo nothing', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    const first = await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-18T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.errors).toBeUndefined();
+    // The stored days score as the fetched ones did.
+    expect(response.data?.activityRanking.activities).toEqual(
+      first.data?.activityRanking.activities,
+    );
+    // The first request's geocoding and forecast, and nothing since.
+    expect(app.openMeteo.requests.map(({ pathname }) => pathname)).toEqual([
+      '/v1/search',
+      '/v1/forecast',
+    ]);
+  });
+
+  it.each([{ days: 7 }, { days: 1 }] as const)(
+    'fetches the week from the new today once the stored one is a day short, asked for days: $days',
+    async ({ days }) => {
+      // Given
+      const clock = fixedClock('2026-10-18T09:00:00Z');
+      const app = await createTestApp({ clock });
+      await requestActivityRanking(app, { city: 'Chamonix' });
+      clock.advanceTo('2026-10-19T09:00:00Z');
+
+      // When
+      await requestActivityRanking(app, { city: 'Chamonix', days });
+
+      // Then
+      expect(
+        app.openMeteo
+          .requestsTo('forecast')
+          .map(({ searchParams }) => searchParams.get('start_date')),
+      ).toEqual(['2026-10-18', '2026-10-19']);
+    },
+  );
+
+  it('fetches the week again when a day in the middle of the stored one is missing', async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    const [chamonix] = await readLocations(app.db);
+    await storeDayMissing(app.db, chamonix!, '2026-10-21');
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(app.openMeteo.requestsTo('forecast')).toHaveLength(2);
+  });
+
+  it('keeps one row per date when the week fetched again overlaps the stored one', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-19T09:00:00Z');
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect((await readDailyWeather(app.db)).map(({ date }) => date)).toEqual([
+      ...WEEK,
+      '2026-10-25',
+    ]);
+  });
+
+  it('overwrites the overlapping days with the week fetched again', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-19T09:00:00Z');
+
+    // When
+    await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    const overlapping = (await readDailyWeather(app.db)).find(({ date }) => date === '2026-10-19');
+    // The fake dates the recording from the first date asked for: 20.9 mm on the second date of
+    // the first fetch, 3.1 mm on the first date of the second.
+    expect(overlapping?.precipitationMm).toBe(3.1);
+  });
+
+  it("starts the week on the place's own date: at 23:30 UTC, two hours ahead, the next one", async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    // 01:30 on 19 October in Chamonix: the week stored from the 18th is a day short there.
+    clock.advanceTo('2026-10-18T23:30:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    const [outdoor] = response.data?.activityRanking.activities ?? [];
+    expect(outdoor?.days.map(({ date }) => date)).toEqual([...WEEK.slice(1), '2026-10-25']);
+  });
 });
 
 const WEEK = [
@@ -333,6 +504,21 @@ const UPSTREAM_FAILURES = [
     api: 'forecast',
     failing: 'a response that fails validation',
     failure: { body: { daily: { time: ['2026-10-18'] } } },
+  },
+  {
+    api: 'forecast',
+    failing: 'a week without today',
+    failure: { dates: { from: '2026-10-19', to: '2026-10-24' } },
+  },
+  {
+    api: 'forecast',
+    failing: 'a week a day later than asked',
+    failure: { dates: { from: '2026-10-19', to: '2026-10-25' } },
+  },
+  {
+    api: 'forecast',
+    failing: 'a week without its last day',
+    failure: { dates: { from: '2026-10-18', to: '2026-10-23' } },
   },
 ] as const;
 

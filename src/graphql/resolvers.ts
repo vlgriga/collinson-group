@@ -8,9 +8,15 @@ export function createResolvers(ranking: RankingService): Resolvers {
     Query: {
       activityRanking: async (_parent, args) => {
         try {
-          const { location, activities } = await ranking.rank(parseActivityRankingArgs(args));
+          const { location, forecastFetchedAt, activities } = await ranking.rank(
+            parseActivityRankingArgs(args),
+          );
           const { elevationM, ...place } = location;
-          return { location: { ...place, elevation: elevationM }, activities };
+          return {
+            location: { ...place, elevation: elevationM },
+            forecastFetchedAt: forecastFetchedAt.toISOString(),
+            activities,
+          };
         } catch (error) {
           throw toResponseError(error);
         }
