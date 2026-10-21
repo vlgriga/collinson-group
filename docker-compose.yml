@@ -51,9 +51,7 @@ services:
       timeout: 3s
       retries: 10
 
-  worker:
-    <<: *app
-    command: ['node', 'dist/worker.js']
+  # The worker, `node dist/worker.js` on the same image, joins with Refresh (docs/design/refresh.md).
 
 volumes:
   postgres-data:
