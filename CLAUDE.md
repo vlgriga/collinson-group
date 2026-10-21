@@ -5,8 +5,8 @@ and ranks the next 7 days for skiing, surfing, outdoor and indoor sightseeing, f
 persisted in Postgres and refreshed in the background by a pg-boss worker. The brief is
 [TASK.md](TASK.md).
 
-**State:** the tooling and the [product requirements](docs/prd.md) are in place; the activity
-ranking feature is being built, from a tracer through every layer. Work is planned a feature at a time into a design doc and issues on the
+**State:** the activity ranking feature is built; Refresh, Resilience and Operations are designed
+as drafts in [docs/design/](docs/design/) and not built. Work is planned a feature at a time into a design doc and issues on the
 [board](https://github.com/users/vlgriga/projects/2). A command or file named below that does not
 exist yet belongs to an issue that hasn't landed: build it as that issue says, don't invent a
 substitute.
@@ -49,7 +49,7 @@ make doctor        # what's missing on this machine, and the command that fixes 
 make install       # npm ci + git hooks
 make migrate       # Postgres from docker compose + migrations
 make dev-api       # http://localhost:4000/graphql
-make dev-worker
+make dev-worker    # once Refresh is built
 make check         # lint, format check, typecheck; changes nothing
 make fix
 make test          # all levels, real Postgres in containers (Docker must be running)

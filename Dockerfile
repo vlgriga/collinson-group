@@ -16,7 +16,7 @@ RUN npm run codegen && npm run build
 FROM build AS migrate
 CMD ["npx", "drizzle-kit", "migrate"]
 
-# api and worker: the same image, started with a different entrypoint.
+# api, and the worker once Refresh is built: the same image, started with a different entrypoint.
 FROM node:22.19.0-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
