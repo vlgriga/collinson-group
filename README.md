@@ -142,6 +142,47 @@ Known limits of what is built, with their mitigations, are in the design's
 the wrong place; a city is one point, so snow depth is at the model grid's elevation rather than a
 resort's; a place on the coast can fall outside Marine's grid.
 
+## Assumptions
+
+The brief is open on purpose, so these are the readings I took. The full list, with the open
+questions, is in the [PRD](docs/prd.md#assumptions).
+
+- "The next 7 days" are today and the six after it, in the place's own timezone.
+- A day is the unit of ranking; there is no hourly best window.
+- A city is one point, the geocoder's top match. No nearby resort or beach is searched for, so
+  skiing and surfing describe the city itself.
+- The weekly score is the plain mean of the days; near days do not weigh more.
+- Indoor sightseeing is best when the weather outside is bad, and still fair when it is good.
+- Scoring is a heuristic, not a validated model; every threshold is configuration.
+- The API is public and unauthenticated; reasons are in English and metric units.
+- Open-Meteo's free, non-commercial terms are acceptable for this exercise.
+
+## How I worked
+
+I treated the task as a small product, not a script: the thinking is in the repository, in the
+order it happened.
+
+1. **Requirements first.** The [PRD](docs/prd.md) turns the open brief into requirements,
+   assumptions and open questions before any code.
+2. **Decisions on paper.** Ten [ADRs](docs/decisions/) record each choice that had a plausible
+   alternative (Postgres and pg-boss, scores computed on read, daily granularity, the timezone of
+   the forecast week) with what was rejected and why.
+3. **A design per feature**, [in docs/design](docs/design/), written and reviewed before its code:
+   activity ranking, then refresh, resilience and operations.
+4. **One issue, one branch, one PR.** The [board](https://github.com/users/vlgriga/projects/2) and
+   the git history show the steps; commits carry a `Decision:` footer where a choice was made on
+   purpose. CI runs the same gate as the pre-push hook.
+5. **Tests with the code**, against a real Postgres; only Open-Meteo and the clock are faked.
+6. **Built with an AI assistant (Claude Code)**, under rules checked into the repo
+   ([CLAUDE.md](CLAUDE.md), the [workflow](docs/workflow-lifecycle.md) and the skills in
+   `.claude/skills`): it plans and implements one issue at a time, and I review and approve every
+   plan and every merge. The sessions themselves are not kept; what they produced is in the
+   commits, pull requests and docs.
+
+**Scope.** I built activity ranking end to end and designed refresh, resilience and operations
+without building them. I preferred one feature that is tested and documented over four that are
+half done; the designs show where the rest goes.
+
 ## How it is built
 
 - **A modular monolith** with layered modules: `graphql → ranking ← {locations, weather}`,
