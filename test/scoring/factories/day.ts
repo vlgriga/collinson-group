@@ -13,6 +13,9 @@ export function buildDay(overrides: Partial<DailyWeather> = {}): DailyWeather {
     uvIndexMax: 3,
     weatherCode: 1,
     snowDepthMaxCm: 0,
+    snowfallCm: 0,
+    temperatureMaxC: 21,
+    windGustsMaxKmh: 20,
     ...overrides,
   };
 }

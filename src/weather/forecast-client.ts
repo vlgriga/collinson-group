@@ -23,6 +23,10 @@ const DAILY = z.object({
   wind_speed_10m_max: SERIES,
   uv_index_max: SERIES,
   weather_code: z.array(z.int().nullable()),
+  // Already in cm.
+  snowfall_sum: SERIES,
+  temperature_2m_max: SERIES,
+  wind_gusts_10m_max: SERIES,
 });
 
 const HOURLY = z.object({
@@ -87,6 +91,9 @@ export class ForecastClient {
       uvIndexMax: daily.uv_index_max[day] ?? null,
       weatherCode: daily.weather_code[day] ?? null,
       snowDepthMaxCm: centimetres(snowDepthsM[day]),
+      snowfallCm: daily.snowfall_sum[day] ?? null,
+      temperatureMaxC: daily.temperature_2m_max[day] ?? null,
+      windGustsMaxKmh: daily.wind_gusts_10m_max[day] ?? null,
     }));
     return { days, payload };
   }

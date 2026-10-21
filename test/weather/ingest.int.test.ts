@@ -19,4 +19,23 @@ describe('Forecast ingest', () => {
       [5, 5, 6, 12, 12, 8, 5].map((cm) => expect.closeTo(cm, 9) as unknown),
     );
   });
+
+  it("stores the day's highest temperature, its snowfall in cm and its strongest gust", async () => {
+    // Given
+    const app = await createTestApp({ clock: fixedClock('2026-10-18T09:00:00Z') });
+
+    // When
+    await app.ranking.rank({ city: 'Val Thorens', countryCode: null, days: 7 });
+
+    // Then
+    const [today] = await readDailyWeather(app.db);
+    expect(today).toEqual(
+      expect.objectContaining({
+        date: '2026-10-18',
+        temperatureMaxC: 4,
+        snowfallCm: 4.13,
+        windGustsMaxKmh: 35.3,
+      }),
+    );
+  });
 });

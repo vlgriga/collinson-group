@@ -1,5 +1,5 @@
 {
-  "id": "3281dffc-8d8f-4aa2-a0c7-5ddbb17ac6b1",
+  "id": "3bea74da-bef6-4fc7-b9d1-e050542215d2",
   "prevId": "ec6b15d6-b2de-4a1b-9932-a487d2a7c0c2",
   "version": "7",
   "dialect": "postgresql",
@@ -64,6 +64,24 @@
         },
         "snow_depth_max_cm": {
           "name": "snow_depth_max_cm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snowfall_cm": {
+          "name": "snowfall_cm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temperature_max_c": {
+          "name": "temperature_max_c",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wind_gusts_max_kmh": {
+          "name": "wind_gusts_max_kmh",
           "type": "double precision",
           "primaryKey": false,
           "notNull": false

@@ -13,6 +13,9 @@ export type DailyWeather = {
   weatherCode: number | null;
   /** The deepest the snow on the ground is in any hour of the day. */
   snowDepthMaxCm: number | null;
+  snowfallCm: number | null;
+  temperatureMaxC: number | null;
+  windGustsMaxKmh: number | null;
 };
 
 /** How good a day is for an activity, 0–100, and what decided it. */
