@@ -309,6 +309,37 @@ describe('activityRanking', () => {
     expect(response.data?.activityRanking.forecastFetchedAt).toBe('2026-10-18T09:00:00.000Z');
   });
 
+  it('states the time of the stored forecast it answers from, not the time of the request', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-18T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.data?.activityRanking.forecastFetchedAt).toBe('2026-10-18T09:00:00.000Z');
+  });
+
+  it('states the time of the latest of the forecasts fetched for the place', async () => {
+    // Given
+    const clock = fixedClock('2026-10-18T09:00:00Z');
+    const app = await createTestApp({ clock });
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    // A day on, the stored week is a day short, and is fetched again.
+    clock.advanceTo('2026-10-19T09:00:00Z');
+    await requestActivityRanking(app, { city: 'Chamonix' });
+    clock.advanceTo('2026-10-19T15:00:00Z');
+
+    // When
+    const response = await requestActivityRanking(app, { city: 'Chamonix' });
+
+    // Then
+    expect(response.data?.activityRanking.forecastFetchedAt).toBe('2026-10-19T09:00:00.000Z');
+  });
+
   it('answers a second request the same day from the stored forecast, asking Open-Meteo nothing', async () => {
     // Given
     const clock = fixedClock('2026-10-18T09:00:00Z');
