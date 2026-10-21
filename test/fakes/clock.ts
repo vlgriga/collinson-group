@@ -11,7 +11,11 @@ export function fixedClock(instant: string): FixedClock {
   return {
     now: () => new Date(now),
     advanceTo: (later) => {
-      now = new Date(later);
+      const next = new Date(later);
+      if (next < now) {
+        throw new Error(`The clock does not go back: ${later} is before ${now.toISOString()}`);
+      }
+      now = next;
     },
   };
 }
